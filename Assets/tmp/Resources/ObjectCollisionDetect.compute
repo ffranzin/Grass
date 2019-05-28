@@ -1,0 +1,210 @@
+﻿
+#include "Assets/GrassVariables.cginc"
+
+#pragma kernel ComputeObjectCollision
+#pragma kernel InitializeCollisionPage
+#pragma kernel RecoverCollisionPageToInitialState
+
+
+//Maintain this values below matching with the enum 'ShapeType' in 'ColllisionShape.cs'.
+#define COLLIDER_PLANE 0
+#define COLLIDER_SPHERE 1
+
+RWTexture2D<float4> _collisionmapAtlas;
+RWTexture2D<float> _heightmapAtlas;
+float4 _OriginOffset;
+float _deltaTime;
+
+float3 _forceDir;
+
+float4 _Plane_Vertices[4];
+float3 _Plane_Normal;
+float3 _Plane_Position;
+float3 _Sphere_Position;
+
+int _positionsBufferCounter;
+
+float _objectRadius;
+float3 _colliderPosition;
+
+int _generateStaticColision;
+int _colliderShape;
+float4 _boundMin;
+float4 _boundMax;
+
+StructuredBuffer<float4> _positionsBuffer;
+
+#include "ObjectCollisionDetectUtils.cginc"
+
+
+#define RECOVER_SPEED 1
+
+
+[numthreads(8, 8, 1)]
+void InitializeCollisionPage(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x > _collisionmapDesc.z - 1 || id.y > _collisionmapDesc.z - 1)
+        return;
+		
+	//if(id.x == 0 || id.y == 0)
+	//	_collisionmapAtlas[_collisionmapDesc.xy + id.xy] = float4(1.0, 1.0, 1.0, RECOVERED);
+	//else
+		_collisionmapAtlas[_collisionmapDesc.xy + id.xy] = float4(1.0, SCALE_CUTOFF, 0.0, RECOVERED);
+}
+
+
+float BilinearHeightMap(float2 atlasPosHM)
+{
+	float tl = _heightmapAtlas.Load(int3(atlasPosHM, 0)).r;   
+    float tr = _heightmapAtlas.Load(int3(atlasPosHM + float2(1, 0), 0)).r;   
+    float bl = _heightmapAtlas.Load(int3(atlasPosHM + float2(0, 1), 0)).r;   
+    float br = _heightmapAtlas.Load(int3(atlasPosHM + float2(1, 1), 0)).r; 
+        
+    float2 fracPos = frac(atlasPosHM);    
+	float t = lerp(tl, tr, fracPos.x);
+	float b = lerp(bl, br, fracPos.x);
+
+	return lerp(t, b, fracPos.y);
+}
+
+
+void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, uint state)
+{
+	float3 grassDir = normalize(grassVector);
+	float mag = length(grassVector);
+	float distance = INFINITY;
+
+	float3 colisionPos = float3(0,0,0);
+
+	//////////////////////////
+	//FIND COLISION DISTANCE//
+	//////////////////////////
+	if(_colliderShape == COLLIDER_PLANE)
+	{
+		distance = RayPlaneIntersect(wPos, grassDir, _Plane_Position, _Plane_Normal);
+		colisionPos = wPos + grassDir * distance;
+
+		if(!PointInsideArbitraryQuad(colisionPos, _Plane_Vertices))
+		{
+			distance = INFINITY;
+			state = state & REVERT_TEMP_UNRECOVERABLE;
+		}
+		else
+		{
+			state = state | TEMP_UNRECOVERABLE;
+		}
+	}
+	else if(_colliderShape == COLLIDER_SPHERE)
+	{
+		distance = RaySphereIntersect(wPos, grassDir, _Sphere_Position, _objectRadius);
+
+		colisionPos = wPos + grassDir * distance;
+
+		if(length(colisionPos.xz - _Sphere_Position.xz) > _objectRadius)
+		{
+			distance = INFINITY;
+			state = state & REVERT_TEMP_UNRECOVERABLE;
+		}
+		else
+		{
+			state = state | TEMP_UNRECOVERABLE;
+		}
+	}
+
+	//////////////////////////
+	//FIND NEW COLISION POS //
+	//////////////////////////
+	if(distance <= mag)
+	{
+		float h_offset = colisionPos.y - wPos.y;
+
+		float d = sqrt((mag * mag) - (h_offset * h_offset));
+
+		float3 pointOutOfObject = colisionPos + normalize(_forceDir) * d;
+
+		grassVector = normalize(pointOutOfObject - wPos) * mag;
+
+		if(_generateStaticColision == 1)
+			state = state | PERM_UNRECOVERABLE;
+
+		state = state & REVERT_RECOVERED;
+	}
+	
+	_collisionmapAtlas[atlasPos] = float4(grassVector, state);
+}
+
+
+
+
+[numthreads(8,8,1)]
+void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
+{
+    float2 pos = id.xy + _boundMin.xy;
+
+    if (pos.x > _collisionmapDesc.z || pos.y > _collisionmapDesc.z)
+        return;
+
+    float2 uv = saturate(pos / _collisionmapDesc.z);
+
+	float2 pixelWorldPos = _cellWorldDesc.xy + _cellWorldDesc.zw * uv;
+
+	float2 atlasPos = round(_collisionmapDesc.xy + uv * _collisionmapDesc.z);
+
+	float4 collisionSample = _collisionmapAtlas[atlasPos];
+
+	float2 atlasPosHM = _heightmapAtlasDesc.xy +  (uv * (_heightmapAtlasDesc.z - 2));
+	
+	float3 wPos = float3(pixelWorldPos.x, 0, pixelWorldPos.y);
+
+	uint state = (uint)round(collisionSample.w);
+	
+	if(length(pixelWorldPos - _colliderPosition.xz) < _objectRadius)
+		_collisionmapAtlas[atlasPos] = float4(0,0,1,1);
+
+	return;
+
+	if(!IsPointInsideCircle(wPos.xz + collisionSample.xz, _colliderPosition.xz, _objectRadius))
+	{
+		_collisionmapAtlas[atlasPos] = float4(collisionSample.xyz, state & REVERT_TEMP_UNRECOVERABLE);
+		return;
+	}
+
+	wPos.y = +0.2;// BilinearHeightMap(atlasPosHM);
+
+	FindCollisionPos(collisionSample.xyz, atlasPos, wPos, state);
+}
+
+
+
+
+[numthreads(8, 8, 1)]
+void RecoverCollisionPageToInitialState(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x > _collisionmapDesc.z || id.y > _collisionmapDesc.z)
+        return;
+
+    float2 atlasPos = _collisionmapDesc.xy + id.xy;
+
+	float4 sample = _collisionmapAtlas[atlasPos];
+
+	uint state = (uint)round(sample.w);
+
+	if(	((state & RECOVERED) == RECOVERED) ||
+		((state & TEMP_UNRECOVERABLE) == TEMP_UNRECOVERABLE) ||
+		((state & PERM_UNRECOVERABLE) == PERM_UNRECOVERABLE))
+		return;
+	
+    float mag = length(sample.xyz);
+
+	float3 dir = normalize(sample.xyz);
+
+	float randSpeed = 1.0;// + sin(atlasPos.x * atlasPos.y);
+
+	if(dot(float3(0, 1, 0), dir) < 0.999)	
+		sample.xyz = normalize(lerp(dir, float3(0.0, 1, 0.0), _deltaTime * (RECOVER_SPEED + randSpeed))) * mag;
+	else
+		sample.w = state | RECOVERED;
+	
+	_collisionmapAtlas[atlasPos] = sample;
+}	
+

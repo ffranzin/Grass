@@ -1,0 +1,38 @@
+﻿
+
+#pragma kernel ComputePositions
+
+#include "Assets\NoisesShader\Resources\SimplexNoise2D.cginc"
+#include "Assets\NoisesShader\Resources\NoiseUtils.cginc"
+#include "Assets\NoisesShader\Resources\ClassicNoise2D.cginc"
+#include "Assets\DistributionModule\Resources\GrassUtils.cginc"
+#include "Assets\GrassVariables.cginc"
+
+AppendStructuredBuffer<float4> _positionsBuffer;
+
+float4 _gridDim;
+float4 _cellDesc;
+int _distribuitionSeed;
+
+
+
+[numthreads(8,8,1)]
+void ComputePositions(uint3 id : SV_DispatchThreadID)
+{
+	if(id.x > _gridDim.x || id.y > _gridDim.x)	return;
+	
+	float2 uv = saturate(id.xy / _gridDim.x);
+
+	float halfCellSize = _gridDim.y * .5;
+
+	float2 displacement = float2(halfCellSize, halfCellSize) /*Translate to center of gridCell*/ 
+						+ (RandomPosInsideSquere((uv * _distribuitionSeed) % 100, id.x) * halfCellSize);
+	
+	float2 posWorld = uv * _cellDesc.zw;
+	posWorld += _cellDesc.xy;
+
+	float scale = max(0.5, abs(gradientfbm2D(posWorld % 100, 2, 2, 1, 0.5, 2)));
+	
+	if(scale > SCALE_CUTOFF)
+		_positionsBuffer.Append(float4(posWorld.x, 0, posWorld.y, scale));
+}

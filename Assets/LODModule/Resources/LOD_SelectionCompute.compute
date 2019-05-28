@@ -1,0 +1,80 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel ComputeLODs
+#pragma kernel ComputeLODs1
+
+#include "Assets/GrassVariables.cginc"
+
+
+
+StructuredBuffer<float4> inputBuffer;
+AppendStructuredBuffer<float4> outputPositionsBuffer_LOD0;
+AppendStructuredBuffer<float4> outputPositionsBuffer_LOD1;
+AppendStructuredBuffer<float4> outputPositionsBuffer_LOD2;
+
+StructuredBuffer<float> LODRanges;
+
+float3 _cameraPosition;
+
+inline void AddPositionOnBufferLOD(float4 position)
+{
+	float distance = length(_cameraPosition - position.xyz);
+	
+	if(distance < LODRanges[0])	outputPositionsBuffer_LOD0.Append(position);
+	else if(distance < LODRanges[1])	outputPositionsBuffer_LOD1.Append(position);
+	else if(distance < LODRanges[2])	outputPositionsBuffer_LOD2.Append(position);
+}
+
+
+[numthreads(128,1,1)]
+void ComputeLODs (uint3 id : SV_DispatchThreadID)
+{
+	uint counter, stride;
+
+	inputBuffer.GetDimensions(counter, stride);
+
+	if(id.x < counter) AddPositionOnBufferLOD(inputBuffer[id.x]);
+}
+
+
+
+
+struct teste
+{
+	StructuredBuffer<float4> inputBuffer[16];
+};
+
+teste LOD_ToCompute;
+
+
+[numthreads(128,1,1)]
+void ComputeLODs1 (uint3 id : SV_DispatchThreadID)
+{
+	for(int i = 0; i < 16; i++)
+	{
+		float4 pos = LOD_ToCompute.inputBuffer[i][id.y];
+		AddPositionOnBufferLOD(pos);
+	}
+}
+
+/*
+
+[numthreads(1024,1,1)]
+void ComputeLODs (uint3 id : SV_DispatchThreadID)
+{
+	int k = 1;
+
+	int ini = id.x * k;
+	int end = ini + k;
+	
+	uint counter, stride;
+
+	inputBuffer.GetDimensions(counter, stride);
+
+	for(int i = ini; i < end; i++)
+	{
+		if(i < counter)
+			AddPositionOnBufferLOD(inputBuffer[i]);
+	}
+}
+*/
+
