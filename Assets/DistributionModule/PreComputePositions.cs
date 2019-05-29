@@ -16,7 +16,7 @@ public class PreComputePositions : Singleton<PreComputePositions>
     }
     
 
-    public void ComputePositions(ComputeBuffer buffer, GrassHashCell cell, GrassConfig config)
+    public void ComputePositions(Atlas.AtlasPageDescriptor bufferDesc, GrassHashCell cell, GrassConfig config)
     {
         Profiler.BeginSample("Grass - Distribution");
         Bounds b = cell.boundsWorld;
@@ -27,14 +27,15 @@ public class PreComputePositions : Singleton<PreComputePositions>
 
         compute.SetVector("_cellDesc", new Vector4(b.min.x, b.min.z, b.size.x, b.size.z));
         compute.SetVector("_gridDim", new Vector4(gridDim1D, gridCellSize, 0, 0));
+
+        //bufferDesc.SetCounterValue(0);
+        //compute.SetBuffer(kernelIndex, "_positionsBuffer", bufferDesc);
+
+        compute.SetTexture(kernelIndex, "_positionsBufferAtlas", bufferDesc.atlas.texture);
+        compute.SetVector("_positionsBufferDesc", bufferDesc.tl_size);
         
-        buffer.SetCounterValue(0);
-        compute.SetBuffer(kernelIndex, "_positionsBuffer", buffer);
-
         compute.SetInt("_distribuitionSeed", cell.seed * config.seed);
-
-        // uint gtx, gty, gtz;
-
+        
         compute.GetKernelThreadGroupSizes(kernelIndex, out uint gtx, out uint gty, out uint gtz);
 
         int gx = Mathf.CeilToInt(gridDim1D / gtx);

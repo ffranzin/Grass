@@ -221,7 +221,7 @@ public class ObjetcRendererIndirect : MonoBehaviour
 public class ObjetcRendererIndirect : MonoBehaviour
 {
     public GrassConfig m_config;
-    public ComputeBufferPool positionsBufferPool { get; private set; }
+    //public ComputeBufferPool positionsBufferPool { get; private set; }
 
     [HideInInspector] public int instances1D { get; private set; }
     [HideInInspector] public int instances2D { get; private set; }
@@ -230,7 +230,7 @@ public class ObjetcRendererIndirect : MonoBehaviour
 
     private int MAX_NODES;
 
-    private List<ComputeBuffer> buffersToRender;
+    private List<Atlas.AtlasPageDescriptor> buffersToRender;
     private List<GrassHashCell> cellsToRender;
     private ComputeBuffer[] computeBufferArgs;
     private MaterialPropertyBlock[] propBlocks;
@@ -245,6 +245,8 @@ public class ObjetcRendererIndirect : MonoBehaviour
 
     private ComputeBuffer LOD_Definitions;
 
+    public Atlas positionsBuffer;
+
     uint[] args = new uint[5];
 
     public static int MaxNodesToDistance(float distance, float cellSize)
@@ -256,7 +258,7 @@ public class ObjetcRendererIndirect : MonoBehaviour
     {
         MAX_NODES = MaxNodesToDistance(m_config.distanceViewRange, GrassHashManager.Instance.cellHSize);
 
-        buffersToRender = new List<ComputeBuffer>();
+        buffersToRender = new List<Atlas.AtlasPageDescriptor>();
         cellsToRender = new List<GrassHashCell>();
         propBlocks = new MaterialPropertyBlock[m_config.LODRanges.Count];
         computeBufferArgs = new ComputeBuffer[m_config.LODRanges.Count];
@@ -297,7 +299,7 @@ public class ObjetcRendererIndirect : MonoBehaviour
 
         instances1D = (int)(GrassHashManager.Instance.cellHSize * m_config.distributionDensity);
         instances2D = instances1D * instances1D;
-        positionsBufferPool = new ComputeBufferPool(MAX_NODES * 5, instances2D, 4 * sizeof(float), ComputeBufferType.Append);
+        //positionsBufferPool = new ComputeBufferPool(MAX_NODES * 5, instances2D, 4 * sizeof(float), ComputeBufferType.Append);
 
         float counter1 = (m_config.distributionDensity * m_config.distributionDensity) * (Mathf.PI * Mathf.Pow(m_config.LODRanges[0].distance, 2f));
         float counter2 = (m_config.distributionDensity * m_config.distributionDensity) * (Mathf.PI * Mathf.Pow(m_config.LODRanges[1].distance, 2f)) - counter1;
@@ -321,6 +323,8 @@ public class ObjetcRendererIndirect : MonoBehaviour
         LOD_Definitions.SetData(lodDistances);
 
         m_config.seed = UnityEngine.Random.Range(1, 100);
+
+         positionsBuffer = new Atlas(RenderTextureFormat.ARGBFloat, FilterMode.Point, 8192, instances1D, false);
     }
 
 
@@ -370,32 +374,32 @@ public class ObjetcRendererIndirect : MonoBehaviour
         m_config.objectRendererMaterial.SetBuffer("_LODRanges", LOD_Definitions);
         m_config.objectRendererMaterial.SetTexture("_collisionAtlas", cellsToRender[0].collisionPage.atlas.texture);
 
-        for (int i = 0; i < cellsToRender.Count; i++)
-        {
-            int lodIndex = SelectLOD(cellsToRender[i], camPos);
+        //for (int i = 0; i < cellsToRender.Count; i++)
+        //{
+        //    int lodIndex = SelectLOD(cellsToRender[i], camPos);
 
-            if (lodIndex > m_config.LODRanges.Count) continue;
+        //    if (lodIndex > m_config.LODRanges.Count) continue;
 
-            ComputeBuffer positions = cellsToRender[i].GetPositionsBuffer(this);
+        //    ComputeBuffer positions = cellsToRender[i].GetPositionsBuffer(this);
 
-            propBlocksQuad[i].SetBuffer("_positionsBuffer", positions);
+        //    propBlocksQuad[i].SetBuffer("_positionsBuffer", positions);
 
-            Vector2 tl = cellsToRender[i].collisionPage.tl;
-            int s = cellsToRender[i].collisionPage.size;
+        //    Vector2 tl = cellsToRender[i].collisionPage.tl;
+        //    int s = cellsToRender[i].collisionPage.size;
 
-            propBlocksQuad[i].SetVector("_collisionmapDesc", new Vector4(tl.x, tl.y, s, 0));
+        //    propBlocksQuad[i].SetVector("_collisionmapDesc", new Vector4(tl.x, tl.y, s, 0));
 
-            propBlocksQuad[i].SetVector("_cellWorldDesc", cellsToRender[i].boundsWorldMinSize);
+        //    propBlocksQuad[i].SetVector("_cellWorldDesc", cellsToRender[i].boundsWorldMinSize);
 
-            FillArgs(ref computeBufferArgsQuad[i], lodIndex);
+        //    FillArgs(ref computeBufferArgsQuad[i], lodIndex);
 
-            propBlocksQuad[i].SetInt("_CurrentLOD", lodIndex);
+        //    propBlocksQuad[i].SetInt("_CurrentLOD", lodIndex);
 
-            ComputeBuffer.CopyCount(positions, computeBufferArgsQuad[i], sizeof(uint));
+        //    ComputeBuffer.CopyCount(positions, computeBufferArgsQuad[i], sizeof(uint));
 
-            Graphics.DrawMeshInstancedIndirect(m_config.LODRanges[lodIndex].bladeMesh, 0, m_config.objectRendererMaterial, b,
-                                           computeBufferArgsQuad[i], 0, propBlocksQuad[i], m_config.shadowCasting, m_config.receiveShadow);
-        }
+        //    Graphics.DrawMeshInstancedIndirect(m_config.LODRanges[lodIndex].bladeMesh, 0, m_config.objectRendererMaterial, b,
+        //                                   computeBufferArgsQuad[i], 0, propBlocksQuad[i], m_config.shadowCasting, m_config.receiveShadow);
+        //}
 
         buffersToRender.Clear();
         cellsToRender.Clear();
@@ -404,7 +408,7 @@ public class ObjetcRendererIndirect : MonoBehaviour
 
     public void RenderCells()
     {
-        LODManager.Instance.CreateLODs(buffersToRender, outputLODBuffers, outputLODBuffersRotated, LOD_Definitions);
+        LODManager.Instance.CreateLODs(buffersToRender, outputLODBuffers, LOD_Definitions);
 
         Vector3 camPos = Camera.main.transform.position;
         camPos.y = 0;
@@ -432,7 +436,7 @@ public class ObjetcRendererIndirect : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        positionsBufferPool.Release();
+       // positionsBufferPool.Release();
 
         for (int i = 0; i < MAX_NODES; i++)
         {

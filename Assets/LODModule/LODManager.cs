@@ -77,7 +77,7 @@ public class LODManager : Singleton<LODManager>
 
 
 
-    public void CreateLODs(List<ComputeBuffer> allBufferToRender, ComputeBuffer[] outputBuffer, ComputeBuffer[] outputRotatedBuffer, ComputeBuffer LODDefinitions)
+    public void CreateLODs(List<Atlas.AtlasPageDescriptor> allBufferToRender, ComputeBuffer[] outputBuffer, ComputeBuffer LODDefinitions)
     {
        // CreateLODs1(allBufferToRender, outputBuffer, LODDefinitions);
        // return;
@@ -94,17 +94,24 @@ public class LODManager : Singleton<LODManager>
         compute.SetBuffer(computeLOD1024, "outputPositionsBuffer_LOD2", outputBuffer[2]);
         
         compute.SetBuffer(computeLOD1024, "LODRanges", LODDefinitions);
+        
+        compute.SetTexture(computeLOD1024, "_positionsBufferAtlas", allBufferToRender[0].atlas.texture);
 
-        for (int i = 0; i < allBufferToRender.Count; i++)
-        {
-            compute.SetBuffer(computeLOD1024, "inputBuffer", allBufferToRender[i]);
-            
-            compute.Dispatch(computeLOD1024, Mathf.CeilToInt(allBufferToRender[i].count / 128), 1, 1);
-        }
+        List<Vector4> allPages = new List<Vector4>();
 
+        foreach (Atlas.AtlasPageDescriptor desc in allBufferToRender)
+            allPages.Add(desc.tl_size);
+
+        ComputeBuffer pages = new ComputeBuffer(allBufferToRender.Count, sizeof(float) * 4);
+        pages.SetData(allPages);
+
+        compute.SetBuffer(computeLOD1024, "allPagesDesc", pages);
+
+        compute.Dispatch(computeLOD1024, Mathf.CeilToInt(allBufferToRender[0].size / 16f), Mathf.CeilToInt(allBufferToRender[0].size / 16f), allPages.Count);
+        
         Profiler.EndSample();
     }
-    
+
     private void Update()
     {
 #if UNITY_EDITOR

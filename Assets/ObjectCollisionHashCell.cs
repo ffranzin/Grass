@@ -10,7 +10,7 @@ public class GrassHashCell
     /// <summary>
     /// Store the positions pre-computed. Each buffer store the position for one kind of ObjectRenderer.
     /// </summary>
-    private ComputeBuffer[] _positionsBuffer;
+    private Atlas.AtlasPageDescriptor[] _positionsBuffer;
     /// <summary>
     /// Store the amount of valid positions stored in positionsBuffer.
     /// </summary>
@@ -39,7 +39,7 @@ public class GrassHashCell
 
         InstanciateCollider();
 
-        _positionsBuffer = new ComputeBuffer[ObjectRendererManager.Instance.objectRenderers.Length];
+        _positionsBuffer = new Atlas.AtlasPageDescriptor[ObjectRendererManager.Instance.objectRenderers.Length];
 
         boundsWorldMinSize = new Vector4(boundsWorld.min.x, boundsWorld.min.z, boundsWorld.size.x, boundsWorld.size.z);
 
@@ -69,11 +69,11 @@ public class GrassHashCell
     /// Each cell contains a list of buffers with the pre-computed position for each kind of objectrenderer.
     /// The renderer get the buffer through this method, that control the buffer generation when it is necessary.
     /// </summary>
-    public ComputeBuffer GetPositionsBuffer(ObjetcRendererIndirect renderer)
+    public Atlas.AtlasPageDescriptor GetPositionsBuffer(ObjetcRendererIndirect renderer)
     {
         if (_positionsBuffer[renderer.rendererID] == null)
         {
-            _positionsBuffer[renderer.rendererID] = renderer.positionsBufferPool.GetBuffer();
+            _positionsBuffer[renderer.rendererID] = renderer.positionsBuffer.GetPage();
 
             PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
         }

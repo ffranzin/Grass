@@ -1,10 +1,13 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel ComputeLODs
-#pragma kernel ComputeLODs1
 
 #include "Assets/GrassVariables.cginc"
 
+float4 _positionsBufferDesc;
 
+StructuredBuffer<float4> allPagesDesc;
+
+Texture2D<float4> _positionsBufferAtlas;
 
 StructuredBuffer<float4> inputBuffer;
 AppendStructuredBuffer<float4> outputPositionsBuffer_LOD0;
@@ -25,36 +28,13 @@ inline void AddPositionOnBufferLOD(float4 position)
 }
 
 
-[numthreads(128,1,1)]
+[numthreads(16,16,1)]
 void ComputeLODs (uint3 id : SV_DispatchThreadID)
 {
-	uint counter, stride;
-
-	inputBuffer.GetDimensions(counter, stride);
-
-	if(id.x < counter) AddPositionOnBufferLOD(inputBuffer[id.x]);
+	AddPositionOnBufferLOD(_positionsBufferAtlas[id.xy + allPagesDesc[id.z].xy]);
 }
 
 
-
-
-struct teste
-{
-	StructuredBuffer<float4> inputBuffer[16];
-};
-
-teste LOD_ToCompute;
-
-
-[numthreads(128,1,1)]
-void ComputeLODs1 (uint3 id : SV_DispatchThreadID)
-{
-	for(int i = 0; i < 16; i++)
-	{
-		float4 pos = LOD_ToCompute.inputBuffer[i][id.y];
-		AddPositionOnBufferLOD(pos);
-	}
-}
 
 /*
 
