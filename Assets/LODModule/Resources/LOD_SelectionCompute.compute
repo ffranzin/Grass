@@ -3,58 +3,57 @@
 
 #include "Assets/GrassVariables.cginc"
 
-float4 _positionsBufferDesc;
+float3 _cameraPosition;
 
-StructuredBuffer<float4> allPagesDesc;
+StructuredBuffer<float4> _allPagesDesc;
+
+int _allPagesDescCounter;
 
 Texture2D<float4> _positionsBufferAtlas;
 
-StructuredBuffer<float4> inputBuffer;
-AppendStructuredBuffer<float4> outputPositionsBuffer_LOD0;
-AppendStructuredBuffer<float4> outputPositionsBuffer_LOD1;
-AppendStructuredBuffer<float4> outputPositionsBuffer_LOD2;
+AppendStructuredBuffer<float4> _outputPositionsBuffer_LOD0;
+AppendStructuredBuffer<float4> _outputPositionsBuffer_LOD1;
+AppendStructuredBuffer<float4> _outputPositionsBuffer_LOD2;
+StructuredBuffer<float> _LODRanges;
 
-StructuredBuffer<float> LODRanges;
 
-float3 _cameraPosition;
 
 inline void AddPositionOnBufferLOD(float4 position)
 {
 	float distance = length(_cameraPosition - position.xyz);
 	
-	if(distance < LODRanges[0])	outputPositionsBuffer_LOD0.Append(position);
-	else if(distance < LODRanges[1])	outputPositionsBuffer_LOD1.Append(position);
-	else if(distance < LODRanges[2])	outputPositionsBuffer_LOD2.Append(position);
+	if(distance < _LODRanges[0])		_outputPositionsBuffer_LOD0.Append(position);
+	else if(distance < _LODRanges[1])	_outputPositionsBuffer_LOD1.Append(position);
+	else if(distance < _LODRanges[2])	_outputPositionsBuffer_LOD2.Append(position);
 }
 
 
-[numthreads(16,16,1)]
-void ComputeLODs (uint3 id : SV_DispatchThreadID)
+[numthreads(8,8,4)]
+void ComputeLODs(uint3 id : SV_DispatchThreadID)
 {
-	AddPositionOnBufferLOD(_positionsBufferAtlas[id.xy + allPagesDesc[id.z].xy]);
+	if( id.x > _allPagesDesc[id.z].z || id.y > _allPagesDesc[id.z].z || id.z > _allPagesDescCounter)	return;
+	
+	AddPositionOnBufferLOD(_positionsBufferAtlas[id.xy + _allPagesDesc[id.z].xy]);
 }
 
 
 
-/*
 
-[numthreads(1024,1,1)]
-void ComputeLODs (uint3 id : SV_DispatchThreadID)
+
+[numthreads(8,8,1)]
+void ComputeLODs1(uint3 id : SV_DispatchThreadID)
 {
-	int k = 1;
+	int k = 4;
 
-	int ini = id.x * k;
+	int ini = id.z * k;
 	int end = ini + k;
 	
-	uint counter, stride;
-
-	inputBuffer.GetDimensions(counter, stride);
-
 	for(int i = ini; i < end; i++)
 	{
-		if(i < counter)
-			AddPositionOnBufferLOD(inputBuffer[i]);
+		if( id.x > _allPagesDesc[id.z].z || id.y > _allPagesDesc[id.z].z || id.z > _allPagesDescCounter)	return;
+		
+		AddPositionOnBufferLOD(_positionsBufferAtlas[id.xy + _allPagesDesc[i].xy]);
 	}
 }
-*/
+
 

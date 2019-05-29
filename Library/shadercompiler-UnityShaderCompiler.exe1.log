@@ -1,0 +1,62 @@
+Base path: C:/Program Files/Unity/Hub/Editor/2018.3.0f2/Editor/Data
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at Assets/NoisesShader/Resources/NoiseUtils.cginc(71): implicit truncation of vector type
+  error: 1 plat 4 at Assets/NoisesShader/Resources/NoiseUtils.cginc(136): implicit truncation of vector type
+  error: 1 plat 4 at PreComputePositions.compute(23): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=1834 outsize=2505 ok=1
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at LOD_SelectionCompute.compute(34): signed/unsigned mismatch, unsigned assumed
+  error: 2 plat 4 at LOD_SelectionCompute.compute(53): undeclared identifier '_allPagesDescCounter'
+  error: 1 plat 4 at LOD_SelectionCompute.compute(53): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=1547 outsize=0 ok=0
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler

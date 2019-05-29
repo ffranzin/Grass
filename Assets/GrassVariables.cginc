@@ -67,7 +67,7 @@ Texture2D<float4> _collisionAtlas;
 //----------------------------------------------------------------------------------------
 int _LODCount;
 int _CurrentLOD;
-StructuredBuffer<float> _LODRanges;
+StructuredBuffer<float> __LODRanges;
 
 
 

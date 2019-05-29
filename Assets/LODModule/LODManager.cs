@@ -3,124 +3,84 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using System.Linq;
 using UnityEngine.Profiling;
 
 public class LODManager : Singleton<LODManager>
 {
     ComputeShader compute;
 
-    int computeLOD1024;
-    uint computeLOD1024_gx, computeLOD1024_gy, computeLOD1024_gz;
+    int computeLOD16x16;
+    uint compute_gx, compute_gy, compute_gz;
 
+    ComputeBuffer allPagesDescBuffer;
 
     public void Awake()
     {
         compute = Resources.Load<ComputeShader>("LOD_SelectionCompute");
-        computeLOD1024 = compute.FindKernel("ComputeLODs");
+        computeLOD16x16 = compute.FindKernel("ComputeLODs");
+        
+        ResizePagesBuffer(1);
 
         base.Awake();
-    }
 
-    [StructLayout(LayoutKind.Sequential)]
-    struct teste
-    {
-        //public ComputeBuffer[] inputBuffer;
-        public int[] inputBuffer1;
-    };
-
-
-
-    teste buffers;
-
-    public void CreateLODs1(List<ComputeBuffer> allBufferToRender, ComputeBuffer[] outputBuffer, ComputeBuffer LODDefinitions)
-    {
-        int kernel = compute.FindKernel("ComputeLODs1");
-
-        buffers = new teste();
-
-        //buffers.inputBuffer = new ComputeBuffer[16];
-        buffers.inputBuffer1 = new int[16];
-
-        outputBuffer[0].SetCounterValue(0);
-        outputBuffer[1].SetCounterValue(0);
-        outputBuffer[2].SetCounterValue(0);
-        
-        compute.SetBuffer(kernel, "outputPositionsBuffer_LOD0", outputBuffer[0]);
-        compute.SetBuffer(kernel, "outputPositionsBuffer_LOD1", outputBuffer[1]);
-        compute.SetBuffer(kernel, "outputPositionsBuffer_LOD2", outputBuffer[2]);
-
-        compute.SetBuffer(kernel, "LODRanges", LODDefinitions);
-
-        int counter = 0;
-        
-        for(int i = 0; i < allBufferToRender.Count; i++)
-        {
-            if (counter == 16)
-            {
-                counter = 0;
-
-                ComputeBuffer teste1 = new ComputeBuffer(1, Marshal.SizeOf(typeof(teste)));
-                teste1.SetData(new teste[1] { buffers });
-
-                //compute.SetBuffer(kernel, "LOD_ToCompute", teste);
-
-                //compute.Dispatch(kernel, Mathf.CeilToInt(allBufferToRender[i].count / 128), 1, 1);
-                return;
-            }
-            buffers.inputBuffer1[counter] = 1;
-            counter ++;
-        }
-        
+        compute.GetKernelThreadGroupSizes(computeLOD16x16, out compute_gx, out compute_gy, out compute_gz);
     }
 
 
-
-
-
-    public void CreateLODs(List<Atlas.AtlasPageDescriptor> allBufferToRender, ComputeBuffer[] outputBuffer, ComputeBuffer LODDefinitions)
+    public void CreateLODs(List<Atlas.AtlasPageDescriptor> allBufferToRender, List<ComputeBuffer> outputBuffer, List<ComputeBuffer> outputBufferRotated, ComputeBuffer LODDefinitions)
     {
-       // CreateLODs1(allBufferToRender, outputBuffer, LODDefinitions);
-       // return;
-
         Profiler.BeginSample("Grass - LOD");
-        outputBuffer[0].SetCounterValue(0);
-        outputBuffer[1].SetCounterValue(0);
-        outputBuffer[2].SetCounterValue(0);
+
+        if (allBufferToRender == null || allBufferToRender.Count == 0 ||
+            outputBuffer == null || LODDefinitions == null) return;
+
+        if (allPagesDescBuffer.count < allBufferToRender.Count)
+            ResizePagesBuffer(allBufferToRender.Count);
+
+        outputBuffer.ToList().ForEach(c => c.SetCounterValue(0));
+        outputBufferRotated.ToList().ForEach(c => c.SetCounterValue(0));
         
         compute.SetVector("_cameraPosition", Camera.main.transform.position);
 
-        compute.SetBuffer(computeLOD1024, "outputPositionsBuffer_LOD0", outputBuffer[0]);
-        compute.SetBuffer(computeLOD1024, "outputPositionsBuffer_LOD1", outputBuffer[1]);
-        compute.SetBuffer(computeLOD1024, "outputPositionsBuffer_LOD2", outputBuffer[2]);
+        compute.SetBuffer(computeLOD16x16, "_outputPositionsBuffer_LOD0", outputBuffer[0]);
+        compute.SetBuffer(computeLOD16x16, "_outputPositionsBuffer_LOD1", outputBuffer[1]);
+        compute.SetBuffer(computeLOD16x16, "_outputPositionsBuffer_LOD2", outputBuffer[2]);
+
+        compute.SetBuffer(computeLOD16x16, "_outputPositionsRotatedBuffer_LOD0", outputBufferRotated[0]);
+        compute.SetBuffer(computeLOD16x16, "_outputPositionsRotatedBuffer_LOD1", outputBufferRotated[1]);
+        compute.SetBuffer(computeLOD16x16, "_outputPositionsRotatedBuffer_LOD2", outputBufferRotated[2]);
+
+        compute.SetBuffer(computeLOD16x16, "_LODRanges", LODDefinitions);
+
+        compute.SetTexture(computeLOD16x16, "_positionsBufferAtlas", allBufferToRender[0].atlas.texture);
         
-        compute.SetBuffer(computeLOD1024, "LODRanges", LODDefinitions);
-        
-        compute.SetTexture(computeLOD1024, "_positionsBufferAtlas", allBufferToRender[0].atlas.texture);
+        allPagesDescBuffer.SetData(allBufferToRender.Select(t => t.tl_size).ToArray());
 
-        List<Vector4> allPages = new List<Vector4>();
+        compute.SetBuffer(computeLOD16x16, "_allPagesDesc", allPagesDescBuffer);
 
-        foreach (Atlas.AtlasPageDescriptor desc in allBufferToRender)
-            allPages.Add(desc.tl_size);
+        compute.SetInt("_allPagesDescCounter", allPagesDescBuffer.count);
 
-        ComputeBuffer pages = new ComputeBuffer(allBufferToRender.Count, sizeof(float) * 4);
-        pages.SetData(allPages);
-
-        compute.SetBuffer(computeLOD1024, "allPagesDesc", pages);
-
-        compute.Dispatch(computeLOD1024, Mathf.CeilToInt(allBufferToRender[0].size / 16f), Mathf.CeilToInt(allBufferToRender[0].size / 16f), allPages.Count);
-        
+        compute.Dispatch(computeLOD16x16,   Mathf.CeilToInt(allBufferToRender[0].size / (float)compute_gx), 
+                                            Mathf.CeilToInt(allBufferToRender[0].size / (float)compute_gy),
+                                            Mathf.CeilToInt(allBufferToRender.Count   / (float)4));
         Profiler.EndSample();
     }
+
+
+    private void ResizePagesBuffer(int counter)
+    {
+        allPagesDescBuffer?.Release();
+        allPagesDescBuffer = null;
+
+        allPagesDescBuffer = new ComputeBuffer(counter, sizeof(float) * 4);
+    }
+
 
     private void Update()
     {
 #if UNITY_EDITOR
-        compute.GetKernelThreadGroupSizes(computeLOD1024, out computeLOD1024_gx, out computeLOD1024_gy, out computeLOD1024_gz);
-
-        computeLOD1024_gx = computeLOD1024_gx == 0 ? 1 : computeLOD1024_gx;
-        computeLOD1024_gy = computeLOD1024_gy == 0 ? 1 : computeLOD1024_gy;
-        computeLOD1024_gz = computeLOD1024_gz == 0 ? 1 : computeLOD1024_gz;
+        compute.GetKernelThreadGroupSizes(computeLOD16x16, out compute_gx, out compute_gy, out compute_gz);
 #endif
     }
-
 }

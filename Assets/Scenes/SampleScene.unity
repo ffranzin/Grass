@@ -518,6 +518,8 @@ MonoBehaviour:
     - distance: 150
       bladeMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
   rendererID: 0
+  positionsBuffer:
+    texture: {fileID: 0}
 --- !u!4 &504536090
 Transform:
   m_ObjectHideFlags: 0
@@ -742,6 +744,8 @@ MonoBehaviour:
     - distance: 150
       bladeMesh: {fileID: 4300004, guid: 8e261a8582dee044596708860ef2839c, type: 3}
   rendererID: 0
+  positionsBuffer:
+    texture: {fileID: 0}
 --- !u!4 &1553145741
 Transform:
   m_ObjectHideFlags: 0

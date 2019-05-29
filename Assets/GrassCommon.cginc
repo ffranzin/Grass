@@ -101,7 +101,7 @@ void setup()
 
 		
 
-		if(sample.a < SCALE_CUTOFF || distance2Cam > _LODRanges[_LODCount - 1])
+		if(sample.a < SCALE_CUTOFF || distance2Cam > __LODRanges[_LODCount - 1])
 		{
 			//setCulled = true;
 			//return;
