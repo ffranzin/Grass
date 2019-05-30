@@ -103,7 +103,6 @@ Shader "Nature/GrassBillBoard"
 			int _ShowLODDebug;
 			int _ShowCollisionDebug;
 			sampler _albedo;
-			sampler _CameraDepthTexture;
 
 			struct StructureVS
 			{
@@ -149,7 +148,7 @@ Shader "Nature/GrassBillBoard"
 				vs.eyeVec = normalize(posWorld.xyz - _WorldSpaceCameraPos.xyz);
 				vs.ambientOrLightmapUV = 0;
 
-				vs.debug = collisionSample;
+				vs.debug = collisionSampleDebug;
 
 				//vs.normal = UnityObjectToWorldNormal(v.normal) ;
 				//vs.normal *= (dot(vs.eyeVec, vs.normal) > 0 ? -1 : 1);

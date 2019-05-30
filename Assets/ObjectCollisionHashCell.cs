@@ -26,6 +26,7 @@ public class GrassHashCell
 
     public bool hadCollisionInsideCell, hadPermanentCollisionInsideCell;
 
+
     public GrassHashCell(int hashPosI, int hashPosJ)
     {
         Vector3 cellCenter = new Vector3(GrassHashManager.Instance.cellHSize * (hashPosI + 0.5f), 0,
@@ -84,6 +85,8 @@ public class GrassHashCell
     }
 
 
+    public bool hasCollisionPage { get { return m_collisionPage != null; } }
+    
     private Atlas.AtlasPageDescriptor m_collisionPage;
     public Atlas.AtlasPageDescriptor collisionPage
     {
@@ -94,7 +97,6 @@ public class GrassHashCell
             return m_collisionPage;
         }
     }
-
 
 
     /// <summary>

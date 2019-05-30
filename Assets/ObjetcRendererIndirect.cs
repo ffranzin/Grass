@@ -227,7 +227,8 @@ public class ObjetcRendererIndirect : MonoBehaviour
 
     [HideInInspector] public int rendererID;
     
-    private List<Atlas.AtlasPageDescriptor> buffersToRender;
+    private List<Vector4> positionsBufferToRender;
+    private List<Vector4> collisionsBufferToRender;
     private ComputeBuffer[] computeBufferArgs;
     private MaterialPropertyBlock[] propBlocks;
     
@@ -249,7 +250,8 @@ public class ObjetcRendererIndirect : MonoBehaviour
     {
         int maxNodes = MaxNodesToDistance(m_config.distanceViewRange, GrassHashManager.Instance.cellHSize);
 
-        buffersToRender = new List<Atlas.AtlasPageDescriptor>();
+        positionsBufferToRender = new List<Vector4>();
+        collisionsBufferToRender = new List<Vector4>();
         propBlocks = new MaterialPropertyBlock[m_config.LODRanges.Count];
         computeBufferArgs = new ComputeBuffer[m_config.LODRanges.Count];
         outputLODBuffers = new List<ComputeBuffer>(m_config.LODRanges.Count);
@@ -313,13 +315,15 @@ public class ObjetcRendererIndirect : MonoBehaviour
     /// </summary>
     public void PrepareCellToRender(GrassHashCell cell)
     {
-        buffersToRender.Add(cell.GetPositionsBuffer(this));
+        positionsBufferToRender.Add(cell.GetPositionsBuffer(this).tl_size);
+        
+        collisionsBufferToRender.Add(cell.hasCollisionPage ? cell.collisionPage.tl_size : ObjectCollisionManager.Instance.nullCollisionPage);
     }
 
     
     public void RenderCells()
     {
-        LODManager.Instance.CreateLODs(buffersToRender, outputLODBuffers, outputLODBuffersRotated, LOD_Definitions);
+        LODManager.Instance.CreateLODs(positionsBuffer, positionsBufferToRender, collisionsBufferToRender, outputLODBuffers, outputLODBuffersRotated, LOD_Definitions);
 
         Profiler.BeginSample("Grass - Render");
 
@@ -339,7 +343,8 @@ public class ObjetcRendererIndirect : MonoBehaviour
                                            computeBufferArgs[i], 0, propBlocks[i], m_config.shadowCasting, m_config.receiveShadow);
         }
         
-        buffersToRender.Clear();
+        positionsBufferToRender.Clear();
+        collisionsBufferToRender.Clear();
 
         Profiler.EndSample();
     }
@@ -361,8 +366,8 @@ public class ObjetcRendererIndirect : MonoBehaviour
         outputLODBuffersRotated?.Clear();
         outputLODBuffersRotated = null;
 
-        buffersToRender?.Clear();
-        buffersToRender = null;
+        positionsBufferToRender?.Clear();
+        positionsBufferToRender = null;
 
         LOD_Definitions?.Release();
         LOD_Definitions = null;

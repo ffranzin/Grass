@@ -8,35 +8,36 @@ using UnityEngine.Profiling;
 
 public class LODManager : Singleton<LODManager>
 {
-    ComputeShader compute;
+    private ComputeShader compute;
 
-    int computeLOD16x16;
-    uint compute_gx, compute_gy, compute_gz;
+    private int computeLOD16x16;
+    private uint compute_gx, compute_gy, compute_gz;
 
-    ComputeBuffer allPagesDescBuffer;
+    private ComputeBuffer allPositionsPagesDescBuffer;
+    private ComputeBuffer allCollisionsPagesDescBuffer;
 
     public void Awake()
     {
         compute = Resources.Load<ComputeShader>("LOD_SelectionCompute");
         computeLOD16x16 = compute.FindKernel("ComputeLODs");
+
+        compute.GetKernelThreadGroupSizes(computeLOD16x16, out compute_gx, out compute_gy, out compute_gz);
         
         ResizePagesBuffer(1);
 
         base.Awake();
-
-        compute.GetKernelThreadGroupSizes(computeLOD16x16, out compute_gx, out compute_gy, out compute_gz);
     }
 
 
-    public void CreateLODs(List<Atlas.AtlasPageDescriptor> allBufferToRender, List<ComputeBuffer> outputBuffer, List<ComputeBuffer> outputBufferRotated, ComputeBuffer LODDefinitions)
+    public void CreateLODs(Atlas fullBuffer, List<Vector4> posBufferToRenderDesc, List<Vector4> colBufferToRenderDesc, List<ComputeBuffer> outputBuffer, List<ComputeBuffer> outputBufferRotated, ComputeBuffer LODDefinitions)
     {
         Profiler.BeginSample("Grass - LOD");
 
-        if (allBufferToRender == null || allBufferToRender.Count == 0 ||
+        if (posBufferToRenderDesc == null || posBufferToRenderDesc.Count == 0 ||
             outputBuffer == null || LODDefinitions == null) return;
 
-        if (allPagesDescBuffer.count < allBufferToRender.Count)
-            ResizePagesBuffer(allBufferToRender.Count);
+        if (allPositionsPagesDescBuffer.count < posBufferToRenderDesc.Count)
+            ResizePagesBuffer(posBufferToRenderDesc.Count);
 
         outputBuffer.ToList().ForEach(c => c.SetCounterValue(0));
         outputBufferRotated.ToList().ForEach(c => c.SetCounterValue(0));
@@ -53,27 +54,36 @@ public class LODManager : Singleton<LODManager>
 
         compute.SetBuffer(computeLOD16x16, "_LODRanges", LODDefinitions);
 
-        compute.SetTexture(computeLOD16x16, "_positionsBufferAtlas", allBufferToRender[0].atlas.texture);
+        compute.SetTexture(computeLOD16x16, "_positionsBufferAtlas", fullBuffer.texture);
+        compute.SetTexture(computeLOD16x16, "_collisionsBufferAtlas", ObjectCollisionManager.Instance.m_atlasCollisionAtlas.texture);
         
-        allPagesDescBuffer.SetData(allBufferToRender.Select(t => t.tl_size).ToArray());
+        allPositionsPagesDescBuffer.SetData(posBufferToRenderDesc);
+        allCollisionsPagesDescBuffer.SetData(colBufferToRenderDesc);
 
-        compute.SetBuffer(computeLOD16x16, "_allPagesDesc", allPagesDescBuffer);
+        compute.SetBuffer(computeLOD16x16, "_allPositionsPagesDesc", allPositionsPagesDescBuffer);
+        compute.SetBuffer(computeLOD16x16, "_allCollisionsPagesDesc", allCollisionsPagesDescBuffer);
 
-        compute.SetInt("_allPagesDescCounter", allPagesDescBuffer.count);
+        compute.SetInt("_validPagesDescCounter", allPositionsPagesDescBuffer.count);
 
-        compute.Dispatch(computeLOD16x16,   Mathf.CeilToInt(allBufferToRender[0].size / (float)compute_gx), 
-                                            Mathf.CeilToInt(allBufferToRender[0].size / (float)compute_gy),
-                                            Mathf.CeilToInt(allBufferToRender.Count   / (float)4));
+        int size = fullBuffer.PageSize;
+
+        compute.Dispatch(computeLOD16x16,   Mathf.CeilToInt(size / (float)compute_gx), 
+                                            Mathf.CeilToInt(size / (float)compute_gy),
+                                            Mathf.CeilToInt(posBufferToRenderDesc.Count / (float)compute_gz));
         Profiler.EndSample();
     }
 
 
     private void ResizePagesBuffer(int counter)
     {
-        allPagesDescBuffer?.Release();
-        allPagesDescBuffer = null;
+        allPositionsPagesDescBuffer?.Release();
+        allPositionsPagesDescBuffer = null;
 
-        allPagesDescBuffer = new ComputeBuffer(counter, sizeof(float) * 4);
+        allCollisionsPagesDescBuffer?.Release();
+        allCollisionsPagesDescBuffer = null;
+
+        allPositionsPagesDescBuffer = new ComputeBuffer(counter, sizeof(float) * 4);
+        allCollisionsPagesDescBuffer = new ComputeBuffer(counter, sizeof(float) * 4);
     }
 
 

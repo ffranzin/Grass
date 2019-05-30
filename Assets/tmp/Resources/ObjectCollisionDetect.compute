@@ -150,28 +150,28 @@ void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
 
 	float2 atlasPos = round(_collisionmapDesc.xy + uv * _collisionmapDesc.z);
 
-	float4 collisionSample = _collisionmapAtlas[atlasPos];
+	float4 collisionSampleDebug = _collisionmapAtlas[atlasPos];
 
 	float2 atlasPosHM = _heightmapAtlasDesc.xy +  (uv * (_heightmapAtlasDesc.z - 2));
 	
 	float3 wPos = float3(pixelWorldPos.x, 0, pixelWorldPos.y);
 
-	uint state = (uint)round(collisionSample.w);
+	uint state = (uint)round(collisionSampleDebug.w);
 	
 	if(length(pixelWorldPos - _colliderPosition.xz) < _objectRadius)
 		_collisionmapAtlas[atlasPos] = float4(0,0,1,1);
 
 	return;
 
-	if(!IsPointInsideCircle(wPos.xz + collisionSample.xz, _colliderPosition.xz, _objectRadius))
+	if(!IsPointInsideCircle(wPos.xz + collisionSampleDebug.xz, _colliderPosition.xz, _objectRadius))
 	{
-		_collisionmapAtlas[atlasPos] = float4(collisionSample.xyz, state & REVERT_TEMP_UNRECOVERABLE);
+		_collisionmapAtlas[atlasPos] = float4(collisionSampleDebug.xyz, state & REVERT_TEMP_UNRECOVERABLE);
 		return;
 	}
 
 	wPos.y = +0.2;// BilinearHeightMap(atlasPosHM);
 
-	FindCollisionPos(collisionSample.xyz, atlasPos, wPos, state);
+	FindCollisionPos(collisionSampleDebug.xyz, atlasPos, wPos, state);
 }
 
 
@@ -180,14 +180,17 @@ void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void RecoverCollisionPageToInitialState(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x > _collisionmapDesc.z || id.y > _collisionmapDesc.z)
-        return;
+   // if (id.x > _collisionmapDesc.z || id.y > _collisionmapDesc.z)
+    //    return;
 
     float2 atlasPos = _collisionmapDesc.xy + id.xy;
 
 	float4 sample = _collisionmapAtlas[atlasPos];
 
 	uint state = (uint)round(sample.w);
+
+	_collisionmapAtlas[atlasPos] = float4(0,0,0,0);
+	return;
 
 	if(	((state & RECOVERED) == RECOVERED) ||
 		((state & TEMP_UNRECOVERABLE) == TEMP_UNRECOVERABLE) ||

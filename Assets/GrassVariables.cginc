@@ -46,7 +46,6 @@ float4 _collisionmapDesc;
 float _bufferSize1D;
 float _cellSubdivision;
 
-RWStructuredBuffer<int> _hadCollisionOnPage;
 
 
 //----------------------------------------------------------------------------------------
@@ -54,20 +53,17 @@ RWStructuredBuffer<int> _hadCollisionOnPage;
 //----------------------------------------------------------------------------------------
 
 int _materialsCount;
-
+float3 _cameraPosition;
 
 int setCulled;
 
-
-
-Texture2D<float4> _collisionAtlas;
 
 //----------------------------------------------------------------------------------------
 //LOD
 //----------------------------------------------------------------------------------------
 int _LODCount;
 int _CurrentLOD;
-StructuredBuffer<float> __LODRanges;
+StructuredBuffer<float> _LODRanges;
 
 
 
@@ -76,7 +72,7 @@ StructuredBuffer<float> __LODRanges;
 //GRASS RENDERING VARIABLE
 //----------------------------------------------------------------------------------------
 float2 seed;
-float4 collisionSample;
+float4 collisionSampleDebug;
 
 
 ///Splat code definition

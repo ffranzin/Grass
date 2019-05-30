@@ -99,9 +99,7 @@ void setup()
 		
 		float distance2Cam = length(sample.xyz - _WorldSpaceCameraPos);
 
-		
-
-		if(sample.a < SCALE_CUTOFF || distance2Cam > __LODRanges[_LODCount - 1])
+		if(sample.a < SCALE_CUTOFF || distance2Cam > _LODRanges[_LODCount - 1])
 		{
 			//setCulled = true;
 			//return;
@@ -110,12 +108,6 @@ void setup()
 		setCulled = false;
 
 		CreateQuaternionBaseRotation(sample.xz, float4(0,1,0,0));
-
-		//float2 uv = frac(sample.xz / _cellWorldDesc.zw);
-
-		//float2 uvOnAtlas = _collisionmapDesc.xy + uv * _collisionmapDesc.z;
-
-		//collisionSample = _collisionAtlas[uvOnAtlas];
 
         SetMatrix(sample.xyz, sample.a);
     #endif

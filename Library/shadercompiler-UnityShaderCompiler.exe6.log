@@ -1,42 +1,89 @@
 Base path: C:/Program Files/Unity/Hub/Editor/2018.3.0f2/Editor/Data
 Cmd: initializeCompiler
 Cmd: compileComputeKernel
-  api=4 insize=1296 outsize=1445 ok=1
+  error: 1 plat 4 at LOD_SelectionCompute.compute(41): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(81): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=2246 outsize=1825 ok=1
 Cmd: initializeCompiler
 Cmd: compileComputeKernel
-  api=4 insize=1294 outsize=1445 ok=1
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: compileComputeKernel
-  api=4 insize=1295 outsize=1445 ok=1
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
+  error: 1 plat 4 at LOD_SelectionCompute.compute(41): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(81): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=2275 outsize=1825 ok=1
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: compileComputeKernel
-  error: 2 plat 4 at LOD_SelectionCompute.compute(33): syntax error: unexpected token 'id'
-  error: 1 plat 4 at LOD_SelectionCompute.compute(33): signed/unsigned mismatch, unsigned assumed
-  error: 2 plat 4 at LOD_SelectionCompute.compute(52): syntax error: unexpected token 'id'
-  error: 1 plat 4 at LOD_SelectionCompute.compute(52): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=1535 outsize=0 ok=0
+  error: 2 plat 4 at LOD_SelectionCompute.compute(57): 'Append': cannot convert from 'struct PositionRotation' to 'float4'
+  api=4 insize=3265 outsize=0 ok=0
+Cmd: compileComputeKernel
+  error: 1 plat 4 at LOD_SelectionCompute.compute(68): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(112): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=3245 outsize=3549 ok=1
+Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: compileComputeKernel
-  error: 2 plat 4 at LOD_SelectionCompute.compute(33): undeclared identifier '_allPagesDescCounter'
-  error: 1 plat 4 at LOD_SelectionCompute.compute(33): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=1541 outsize=0 ok=0
+  error: 1 plat 4 at LOD_SelectionCompute.compute(67): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(98): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(140): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=4094 outsize=2661 ok=1
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=5478 outsize=1029 ok=1
+Cmd: compileComputeKernel
+  error: 1 plat 4 at LOD_SelectionCompute.compute(58): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(108): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=3158 outsize=3553 ok=1
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at LOD_SelectionCompute.compute(58): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(108): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=3162 outsize=3553 ok=1
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=5478 outsize=1029 ok=1
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
+  error: 2 plat 4 at ObjectCollisionDetect.compute(192): undeclared identifier 'dir'
+  api=4 insize=5669 outsize=0 ok=0
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
+  api=4 insize=5569 outsize=529 ok=1
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 2 plat 4 at ObjectCollisionDetect.compute(13): redefinition of '_collisionmapAtlas'
+  api=4 insize=5567 outsize=0 ok=0
+Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler

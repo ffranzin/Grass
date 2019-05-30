@@ -9,6 +9,8 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 {
     public static bool DISABLE_GRASS_COLLISION = false;
 
+    public Vector4 nullCollisionPage = -Vector4.one;
+
     public static List<GrassHashCell> info_cellsSelected = new List<GrassHashCell>();
     public static int info_groupsDispatchedCount;
 
@@ -79,6 +81,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         if (page == null) return null;
         
         compute.SetVector("_collisionmapDesc", page.tl_size);
+        compute.SetTexture(initializeAtlasPagekernel, "_collisionmapAtlas", page.atlas.texture);
 
         compute.Dispatch(initializeAtlasPagekernel, dispatchGroupSize, dispatchGroupSize, 1);
 
@@ -95,7 +98,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         if (page == null) return;
 
         compute.SetVector("_collisionmapDesc", page.tl_size);
-
+        Debug.Log("LAST COLLISION TIME ATUALIZAR");
         compute.Dispatch(vectorRecoverStateKernel, dispatchGroupSize, dispatchGroupSize, 1);
     }
 
@@ -113,7 +116,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         foreach (GrassHashCell c in GrassHashManager.Instance.allCreatedCells)
         {
-            if ((Time.time - c.lastCollisionTime) < maxTimeToGrassRecoverForm)
+            if (c.hasCollisionPage && (Time.time - c.lastCollisionTime) < maxTimeToGrassRecoverForm)
             {
                 RecoverVectorForInitialStateOnPage(c.collisionPage);
             }
@@ -208,6 +211,9 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         if (DISABLE_GRASS_COLLISION) return;
 
+        UpdateStaticData();
+
+
         RecoverVectorToInitialState();
 
 #if UNITY_EDITOR
@@ -249,6 +255,8 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         }
         Profiler.EndSample();
     }
+    
+
     
 
     private void UpdateStaticData()

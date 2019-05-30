@@ -1,21 +1,31 @@
-﻿// Each #kernel tells which function to compile; you can have many kernels
+﻿
 #pragma kernel ComputeLODs
 
 #include "Assets/GrassVariables.cginc"
 
-float3 _cameraPosition;
-
-StructuredBuffer<float4> _allPagesDesc;
-
-int _allPagesDescCounter;
+int _validPagesDescCounter;
 
 Texture2D<float4> _positionsBufferAtlas;
+Texture2D<float4> _collisionsBufferAtlas;
+
+StructuredBuffer<float4> _allPositionsPagesDesc;
+StructuredBuffer<float4> _allCollisionsPagesDesc;
 
 AppendStructuredBuffer<float4> _outputPositionsBuffer_LOD0;
 AppendStructuredBuffer<float4> _outputPositionsBuffer_LOD1;
 AppendStructuredBuffer<float4> _outputPositionsBuffer_LOD2;
-StructuredBuffer<float> _LODRanges;
 
+AppendStructuredBuffer<RotatedPosition> _outputPositionsRotatedBuffer_LOD0;
+AppendStructuredBuffer<RotatedPosition> _outputPositionsRotatedBuffer_LOD1;
+AppendStructuredBuffer<RotatedPosition> _outputPositionsRotatedBuffer_LOD2;
+
+inline float2 PositionBufferPageMin(uint3 id)	{return _allPositionsPagesDesc[id.z].xy;}
+inline float PositionBufferPageSize(uint3 id)	{return _allPositionsPagesDesc[id.z].z;}
+
+inline float2 CollisionBufferPageMin(uint3 id)	{return _allCollisionsPagesDesc[id.z].xy;}
+inline float CollisionBufferPageSize(uint3 id)	{return _allCollisionsPagesDesc[id.z].z;}
+
+inline bool HasCollisionsOnPage(uint3 id) {return _allCollisionsPagesDesc[id.z].x >= 0;}
 
 
 inline void AddPositionOnBufferLOD(float4 position)
@@ -28,20 +38,65 @@ inline void AddPositionOnBufferLOD(float4 position)
 }
 
 
+inline void AddRotatedPositionOnBufferLOD(float4 position, float4 rotation)
+{
+	float distance = length(_cameraPosition - position.xyz);
+	
+	RotatedPosition pr;
+	pr.position = position;
+	pr.rotation = rotation;
+
+	if(distance < _LODRanges[0])		_outputPositionsRotatedBuffer_LOD0.Append(pr);
+	else if(distance < _LODRanges[1])	_outputPositionsRotatedBuffer_LOD1.Append(pr);
+	else if(distance < _LODRanges[2])	_outputPositionsRotatedBuffer_LOD2.Append(pr);
+}
+
+
 [numthreads(8,8,4)]
 void ComputeLODs(uint3 id : SV_DispatchThreadID)
 {
-	if( id.x > _allPagesDesc[id.z].z || id.y > _allPagesDesc[id.z].z || id.z > _allPagesDescCounter)	return;
+	if(id.x > PositionBufferPageSize(id) || id.y > PositionBufferPageSize(id) || id.z > _validPagesDescCounter)	return;
 	
-	AddPositionOnBufferLOD(_positionsBufferAtlas[id.xy + _allPagesDesc[id.z].xy]);
+	float4 position = _positionsBufferAtlas[PositionBufferPageMin(id) + id.xy];
+
+	if(!HasCollisionsOnPage(id))
+	{
+		AddPositionOnBufferLOD(position);
+	}
+	else
+	{
+		float2 uv = id.xy / PositionBufferPageSize(id);
+
+		float2 colAtlasPos = CollisionBufferPageMin(id) + uv * CollisionBufferPageSize(id);
+		
+		float4 rotation = _collisionsBufferAtlas[colAtlasPos];
+
+		if(rotation.z > 0.5)
+		{
+			AddRotatedPositionOnBufferLOD(position, rotation);
+		}
+		else
+		{
+			AddPositionOnBufferLOD(position);
+		}
+	}
 }
 
 
 
 
 
+
+
+
+
+
+
+
+
+
 [numthreads(8,8,1)]
-void ComputeLODs1(uint3 id : SV_DispatchThreadID)
+void ComputeLODs2(uint3 id : SV_DispatchThreadID)
 {
 	int k = 4;
 
@@ -50,9 +105,9 @@ void ComputeLODs1(uint3 id : SV_DispatchThreadID)
 	
 	for(int i = ini; i < end; i++)
 	{
-		if( id.x > _allPagesDesc[id.z].z || id.y > _allPagesDesc[id.z].z || id.z > _allPagesDescCounter)	return;
+		if( id.x > _allPositionsPagesDesc[id.z].z || id.y > _allPositionsPagesDesc[id.z].z || id.z > _validPagesDescCounter)	return;
 		
-		AddPositionOnBufferLOD(_positionsBufferAtlas[id.xy + _allPagesDesc[i].xy]);
+		AddPositionOnBufferLOD(_positionsBufferAtlas[id.xy + _allPositionsPagesDesc[i].xy]);
 	}
 }
 
