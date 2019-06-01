@@ -14,6 +14,7 @@ public class GrassHashManager : Singleton<GrassHashManager>
     /// Store all created cells. Basically is used to avoid going through all hash to do something in a existed cell. These cells is stored in a hash too. 
     /// </summary>
     public List<GrassHashCell> allCreatedCells = new List<GrassHashCell>();
+    public List<GrassHashCell> allCreatedCellsWithCollision = new List<GrassHashCell>();
 
     public float cellHSize { get; private set; }
     public float cellVSize { get; private set; }
