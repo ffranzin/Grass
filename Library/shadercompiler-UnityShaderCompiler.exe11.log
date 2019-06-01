@@ -1,0 +1,54 @@
+Base path: C:/Program Files/Unity/Hub/Editor/2018.3.14f1/Editor/Data
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(48): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(57): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(188): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=5678 outsize=613 ok=1
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(48): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(57): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 2 plat 4 at ObjectCollisionDetect.compute(166): invalid subscript 'xz'
+  api=4 insize=5622 outsize=0 ok=0
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at LOD_SelectionCompute.compute(58): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at LOD_SelectionCompute.compute(110): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=3233 outsize=3621 ok=1
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler

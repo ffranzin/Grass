@@ -9,7 +9,7 @@
 //Maintain this values below matching with the enum 'ShapeType' in 'ColllisionShape.cs'.
 #define COLLIDER_PLANE 0
 #define COLLIDER_SPHERE 1
-
+#define RECOVERED_DIRECTION float3(0.0, 1.0, 0.0)
 RWTexture2D<float4> _collisionmapAtlas;
 RWTexture2D<float> _heightmapAtlas;
 float4 _OriginOffset;
@@ -34,6 +34,8 @@ float4 _boundMax;
 
 StructuredBuffer<float4> _positionsBuffer;
 
+StructuredBuffer<float4> _collisionPages;
+
 #include "ObjectCollisionDetectUtils.cginc"
 
 
@@ -43,13 +45,10 @@ StructuredBuffer<float4> _positionsBuffer;
 [numthreads(8, 8, 1)]
 void InitializeCollisionPage(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x > _collisionmapDesc.z - 1 || id.y > _collisionmapDesc.z - 1)
+    if (id.x > _collisionmapDesc.z || id.y > _collisionmapDesc.z)
         return;
 		
-	//if(id.x == 0 || id.y == 0)
-	//	_collisionmapAtlas[_collisionmapDesc.xy + id.xy] = float4(1.0, 1.0, 1.0, RECOVERED);
-	//else
-		_collisionmapAtlas[_collisionmapDesc.xy + id.xy] = float4(1.0, SCALE_CUTOFF, 0.0, RECOVERED);
+	_collisionmapAtlas[_collisionmapDesc.xy + id.xy] = float4(RECOVERED_DIRECTION, RECOVERED);
 }
 
 
@@ -110,7 +109,7 @@ void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, uint sta
 			state = state | TEMP_UNRECOVERABLE;
 		}
 	}
-
+	
 	//////////////////////////
 	//FIND NEW COLISION POS //
 	//////////////////////////
@@ -146,53 +145,47 @@ void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
 
     float2 uv = saturate(pos / _collisionmapDesc.z);
 
-	float2 pixelWorldPos = _cellWorldDesc.xy + _cellWorldDesc.zw * uv;
-
+	float2 wp = _cellWorldDesc.xy + _cellWorldDesc.zw * uv.xy;
+	float3 worldPos = float3(wp.x, 0, wp.y);
+	
 	float2 atlasPos = round(_collisionmapDesc.xy + uv * _collisionmapDesc.z);
 
-	float4 collisionSampleDebug = _collisionmapAtlas[atlasPos];
+	float4 collisionSample = _collisionmapAtlas[atlasPos];
 
 	float2 atlasPosHM = _heightmapAtlasDesc.xy +  (uv * (_heightmapAtlasDesc.z - 2));
 	
-	float3 wPos = float3(pixelWorldPos.x, 0, pixelWorldPos.y);
-
-	uint state = (uint)round(collisionSampleDebug.w);
+	uint state = (uint)round(collisionSample.w);
 	
-	if(length(pixelWorldPos - _colliderPosition.xz) < _objectRadius)
-		_collisionmapAtlas[atlasPos] = float4(0,0,1,1);
-
-	return;
-
-	if(!IsPointInsideCircle(wPos.xz + collisionSampleDebug.xz, _colliderPosition.xz, _objectRadius))
+	if(!IsPointInsideCircle(worldPos.xz + collisionSample.xz, _colliderPosition.xz, _objectRadius))
 	{
-		_collisionmapAtlas[atlasPos] = float4(collisionSampleDebug.xyz, state & REVERT_TEMP_UNRECOVERABLE);
+		_collisionmapAtlas[atlasPos] = float4(collisionSample.xyz, state & REVERT_TEMP_UNRECOVERABLE);
 		return;
 	}
 
-	wPos.y = +0.2;// BilinearHeightMap(atlasPosHM);
-
-	FindCollisionPos(collisionSampleDebug.xyz, atlasPos, wPos, state);
+	worldPos.y = 0.05;// BilinearHeightMap(atlasPosHM);
+	
+	FindCollisionPos(collisionSample.xyz, atlasPos, worldPos, state);
 }
 
 
+
+inline int2 GetCollisionPageMin(uint3 id)	{return _collisionPages[id.z].xy;}
+inline int GetCollisionPageSize(uint3 id)	{return _collisionPages[id.z].z;}
 
 
 [numthreads(8, 8, 1)]
 void RecoverCollisionPageToInitialState(uint3 id : SV_DispatchThreadID)
 {
-   // if (id.x > _collisionmapDesc.z || id.y > _collisionmapDesc.z)
-    //    return;
+    if (id.x > GetCollisionPageSize(id) || id.y > GetCollisionPageSize(id))
+        return;
 
-    float2 atlasPos = _collisionmapDesc.xy + id.xy;
-
+    float2 atlasPos = GetCollisionPageMin(id) + id.xy;
+	
 	float4 sample = _collisionmapAtlas[atlasPos];
 
 	uint state = (uint)round(sample.w);
 
-	_collisionmapAtlas[atlasPos] = float4(0,0,0,0);
-	return;
-
-	if(	((state & RECOVERED) == RECOVERED) ||
+	if(false &&	((state & RECOVERED) == RECOVERED) ||
 		((state & TEMP_UNRECOVERABLE) == TEMP_UNRECOVERABLE) ||
 		((state & PERM_UNRECOVERABLE) == PERM_UNRECOVERABLE))
 		return;
@@ -201,10 +194,10 @@ void RecoverCollisionPageToInitialState(uint3 id : SV_DispatchThreadID)
 
 	float3 dir = normalize(sample.xyz);
 
-	float randSpeed = 1.0;// + sin(atlasPos.x * atlasPos.y);
+	float randSpeed = 1.0 + sin(atlasPos.x * atlasPos.y);
 
 	if(dot(float3(0, 1, 0), dir) < 0.999)	
-		sample.xyz = normalize(lerp(dir, float3(0.0, 1, 0.0), _deltaTime * (RECOVER_SPEED + randSpeed))) * mag;
+		sample.xyz = normalize(lerp(dir, RECOVERED_DIRECTION, _deltaTime * (RECOVER_SPEED + randSpeed))) * mag;
 	else
 		sample.w = state | RECOVERED;
 	

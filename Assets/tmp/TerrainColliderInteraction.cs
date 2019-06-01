@@ -177,7 +177,7 @@ public class TerrainColliderInteraction : MonoBehaviour
     {
         lastPos = transform.position;
         allColliders.Add(this);
-        activeCollision = true;
+        activeCollision = GrassHashManager.Instance.IsPositionInsideHashBounds(transform.position);
 
         _force = Vector3.zero;
         _forceX0Z = Vector3.zero;
@@ -214,8 +214,9 @@ public class TerrainColliderInteraction : MonoBehaviour
             _cells.Clear();
             GrassHashManager.Instance.GetCellsAroundPos(transform.position, shape.meshRadius.x + TerrainColliderInteractionShape.meshRadiusOffset, ref _cells);
 
-            foreach (GrassHashCell c in _cells)
+            for (int i = 0; i < _cells.Count; i++)
             {
+                GrassHashCell c = _cells[i];
                 c.hadCollisionInsideCell = true;
                 c.hadPermanentCollisionInsideCell = generatedCollisionType == CollisionType.Permanent;
             }
@@ -229,20 +230,33 @@ public class TerrainColliderInteraction : MonoBehaviour
     {
         get
         {
-            if(!_cell.boundsWorld.Contains(transform.position))
+            if(_cell == null || !_cell.boundsWorld.Contains(transform.position))
             {
                 _cell = GrassHashManager.Instance.GetHashCell(transform.position);
-                _cell.hadCollisionInsideCell = true;
-                _cell.hadPermanentCollisionInsideCell = generatedCollisionType == CollisionType.Permanent;
+                
+                if(_cell != null)
+                {
+                    _cell.hadCollisionInsideCell = true;
+                    _cell.hadPermanentCollisionInsideCell = generatedCollisionType == CollisionType.Permanent;
+                }
             }
             
             return _cell;
         }
     }
 
+    
 
-    public void Update()
+    public void FixedUpdate()
     {
+        if(!GrassHashManager.Instance.IsPositionInsideHashBounds(transform.position))
+        {
+            activeCollision = false;
+            return;
+        }
+
+        activeCollision = true;
+
         _force = _forceX0Z = transform.position - lastPos;
         _forceX0Z.y = 0;
 

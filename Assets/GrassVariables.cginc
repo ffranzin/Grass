@@ -46,7 +46,7 @@ float4 _collisionmapDesc;
 float _bufferSize1D;
 float _cellSubdivision;
 
-
+int _isCurvedPass;
 
 //----------------------------------------------------------------------------------------
 // WORLD PARAMETERS

@@ -46,7 +46,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
     private void Awake()
     {
-        m_atlasCollisionAtlas = new Atlas(RenderTextureFormat.ARGBHalf, FilterMode.Point, 4096, m_atlasCollisionAtlasPageSize, false);
+        m_atlasCollisionAtlas = new Atlas(RenderTextureFormat.ARGBHalf, FilterMode.Bilinear, 4096, m_atlasCollisionAtlasPageSize, false);
 
         compute = (ComputeShader)Resources.Load("ObjectCollisionDetect");
         computeCollisionKernel = compute.FindKernel("ComputeObjectCollision");
@@ -98,7 +98,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         if (page == null) return;
 
         compute.SetVector("_collisionmapDesc", page.tl_size);
-        Debug.Log("LAST COLLISION TIME ATUALIZAR");
+
         compute.Dispatch(vectorRecoverStateKernel, dispatchGroupSize, dispatchGroupSize, 1);
     }
 
@@ -118,7 +118,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         {
             if (c.hasCollisionPage && (Time.time - c.lastCollisionTime) < maxTimeToGrassRecoverForm)
             {
-                RecoverVectorForInitialStateOnPage(c.collisionPage);
+              //  RecoverVectorForInitialStateOnPage(c.collisionPage);
             }
         }
 

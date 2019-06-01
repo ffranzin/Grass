@@ -95,21 +95,36 @@ void setup()
 {
 	#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED 
 
-		float4 sample = _positionsBuffer[unity_InstanceID];// + float4(_cellWorldDesc.x, 0, _cellWorldDesc.y, 0);   
-		
-		float distance2Cam = length(sample.xyz - _WorldSpaceCameraPos);
+        float4 samplePosition, sampleRotation;
 
-		if(sample.a < SCALE_CUTOFF || distance2Cam > _LODRanges[_LODCount - 1])
+        if(_isCurvedPass)
+        {
+            samplePosition = _positionsBufferRotated[unity_InstanceID].position;
+            sampleRotation = _positionsBufferRotated[unity_InstanceID].rotation;
+
+            sampleRotation.w = 1;
+
+            collisionSampleDebug = sampleRotation;
+        }
+        else
+        {
+            samplePosition = _positionsBuffer[unity_InstanceID];
+            sampleRotation = float4(0, 1, 0, 0);
+        }
+        
+		float distance2Cam = length(samplePosition.xyz - _WorldSpaceCameraPos);
+
+		if(samplePosition.a < SCALE_CUTOFF || distance2Cam > _LODRanges[_LODCount - 1])
 		{
-			//setCulled = true;
-			//return;
+			setCulled = true;
+			return;
 		}
 
 		setCulled = false;
+        
+		CreateQuaternionBaseRotation(samplePosition.xz, sampleRotation);
 
-		CreateQuaternionBaseRotation(sample.xz, float4(0,1,0,0));
-
-        SetMatrix(sample.xyz, sample.a);
+        SetMatrix(samplePosition.xyz, samplePosition.a);
     #endif
 }
 

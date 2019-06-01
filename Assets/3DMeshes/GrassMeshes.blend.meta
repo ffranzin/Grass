@@ -8,26 +8,47 @@ ModelImporter:
     100004: LOD0_001
     100006: LOD1
     100008: LOD2
+    100010: Plane
+    100012: Mesh1_LOD0
+    100014: Mesh1_LOD1
+    100016: Mesh1_LOD2
     400000: //RootNode
     400002: LOD0
     400004: LOD0_001
     400006: LOD1
     400008: LOD2
+    400010: Plane
+    400012: Mesh1_LOD0
+    400014: Mesh1_LOD1
+    400016: Mesh1_LOD2
     2100000: unnamed
     2300000: LOD0
     2300002: LOD0_001
     2300004: LOD1
     2300006: LOD2
+    2300008: Plane
+    2300010: Mesh1_LOD0
+    2300012: Mesh1_LOD1
+    2300014: Mesh1_LOD2
     3300000: LOD0
     3300002: LOD0_001
     3300004: LOD1
     3300006: LOD2
+    3300008: Plane
+    3300010: Mesh1_LOD0
+    3300012: Mesh1_LOD1
+    3300014: Mesh1_LOD2
     4300000: LOD0_001
     4300002: LOD0
     4300004: LOD2
     4300006: LOD1
+    4300008: Plane
+    4300010: Mesh1_LOD2
+    4300012: Mesh1_LOD1
+    4300014: Mesh1_LOD0
     7400000: Default Take
     9500000: //RootNode
+    20500000: //RootNode
   externalObjects: {}
   materials:
     importMaterials: 0
@@ -58,7 +79,10 @@ ModelImporter:
     clipAnimations: []
     isReadable: 1
   meshes:
-    lODScreenPercentages: []
+    lODScreenPercentages:
+    - 0.25
+    - 0.125
+    - 0.01
     globalScale: 1
     meshCompression: 0
     addColliders: 0

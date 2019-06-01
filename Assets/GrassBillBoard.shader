@@ -137,7 +137,7 @@ Shader "Nature/GrassBillBoard"
 
 				float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
 
-				v = VertexAnimation(v, unity_ObjectToWorld._14_24_34, unity_ObjectToWorld._44);
+				//v = VertexAnimation(v, unity_ObjectToWorld._14_24_34, unity_ObjectToWorld._44);
 				v = VertexRotation(v);
 
 				vs.colorInf = unity_ObjectToWorld._11;

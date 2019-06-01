@@ -23,7 +23,9 @@ public class GrassHashManager : Singleton<GrassHashManager>
 
     float terrainSize = 1024;
     float terrainCellSize = 16;
-     
+
+    Rect hashBounds;
+
     private void Awake()
     {
         Vector2 tSize = Vector2.one * terrainSize;
@@ -47,6 +49,10 @@ public class GrassHashManager : Singleton<GrassHashManager>
         hashDebug.wrapMode = TextureWrapMode.Clamp;
         hashDebug.Apply();
 
+        hashBounds = new Rect(Vector2.zero, terrainSize);
+       // hashBounds.min = Vector2.zero;
+        //hashBounds.max = terrainSize;
+        
         GameObject.Find("HashDebug").GetComponent<RawImage>().texture = hashDebug;
         
         Debug.Log("Object hash initialized [" + cellHCounter + ", " + cellVCounter + "].");
@@ -93,10 +99,10 @@ public class GrassHashManager : Singleton<GrassHashManager>
     /// <summary>
     /// Find all cells around a position (without camera offset) and radius. The output list is not cleaned at this method.
     /// </summary>
-    public void GetCellsAroundPos(Vector3 positionNoOffset, float radius, ref List<GrassHashCell> selectedCells)
+    public void GetCellsAroundPos(Vector3 position, float radius, ref List<GrassHashCell> selectedCells)
     {
-        int l = (int)(positionNoOffset.x / cellHSize);//floorToInt
-        int c = (int)(positionNoOffset.z / cellVSize);
+        int l = (int)(position.x / cellHSize);//floorToInt
+        int c = (int)(position.z / cellVSize);
 
         int offSetX = 1 + (int)(radius / cellHSize);//ceilToInt
         int offSetY = 1 + (int)(radius / cellVSize);
@@ -115,7 +121,7 @@ public class GrassHashManager : Singleton<GrassHashManager>
                 hash[i, j] = hash[i, j] ?? new GrassHashCell(i, j);
                 hash[i, j].lastCellRequestedTime = Time.time;
                 
-                float dist = Mathf.Sqrt(hash[i, j].boundsWorld.SqrDistance(positionNoOffset));
+                float dist = Mathf.Sqrt(hash[i, j].boundsWorld.SqrDistance(position));
 
                 if (dist < radius)
                 {
@@ -137,6 +143,10 @@ public class GrassHashManager : Singleton<GrassHashManager>
         return ObjectCollisionManager.Instance.m_atlasCollisionAtlas;
     }
 
+    public bool IsPositionInsideHashBounds(Vector3 pos)
+    {
+        return hashBounds.Contains(pos);
+    }
 
     /// <summary>
     /// Find unused cells and release all used memory. This process accur slowly to avoid any processing peak.  

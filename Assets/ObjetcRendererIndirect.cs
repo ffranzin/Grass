@@ -226,21 +226,23 @@ public class ObjetcRendererIndirect : MonoBehaviour
     [HideInInspector] public int instances2D { get; private set; }
 
     [HideInInspector] public int rendererID;
-    
+
     private List<Vector4> positionsBufferToRender;
     private List<Vector4> collisionsBufferToRender;
     private ComputeBuffer[] computeBufferArgs;
+    private ComputeBuffer[] computeBufferArgsCurved;
     private MaterialPropertyBlock[] propBlocks;
-    
+    private MaterialPropertyBlock[] propBlocksCurved;
+
     private List<ComputeBuffer> outputLODBuffers;
-    private List<ComputeBuffer> outputLODBuffersRotated;
+    private List<ComputeBuffer> outputLODBuffersCurved;
 
     private ComputeBuffer LOD_Definitions;
 
     public Atlas positionsBuffer;
 
     private Bounds boundRender;
-    
+
     public static int MaxNodesToDistance(float distance, float cellSize)
     {
         return (int)Mathf.Pow(1 + Mathf.Ceil(((2f * distance) / cellSize)), 2f); ;
@@ -253,58 +255,57 @@ public class ObjetcRendererIndirect : MonoBehaviour
         positionsBufferToRender = new List<Vector4>();
         collisionsBufferToRender = new List<Vector4>();
         propBlocks = new MaterialPropertyBlock[m_config.LODRanges.Count];
+        propBlocksCurved = new MaterialPropertyBlock[m_config.LODRanges.Count];
         computeBufferArgs = new ComputeBuffer[m_config.LODRanges.Count];
+        computeBufferArgsCurved = new ComputeBuffer[m_config.LODRanges.Count];
         outputLODBuffers = new List<ComputeBuffer>(m_config.LODRanges.Count);
-        outputLODBuffersRotated = new List<ComputeBuffer>(m_config.LODRanges.Count);
+        outputLODBuffersCurved = new List<ComputeBuffer>(m_config.LODRanges.Count);
 
         uint[] args = new uint[5];
-
-        float[] lodDistances = new float[m_config.LODRanges.Count];
-        {
-            for (int i = 0; i < m_config.LODRanges.Count; i++)
-            {
-                propBlocks[i] = new MaterialPropertyBlock();
-
-                args[0] = (uint)m_config.LODRanges[i].bladeMesh.GetIndexCount(0);
-                args[1] = (uint)0;
-                args[2] = (uint)m_config.LODRanges[i].bladeMesh.GetIndexStart(0);
-                args[3] = (uint)m_config.LODRanges[i].bladeMesh.GetBaseVertex(0);
-
-                computeBufferArgs[i] = new ComputeBuffer(args.Length, sizeof(uint), ComputeBufferType.IndirectArguments);
-                computeBufferArgs[i].SetData(args);
-
-                propBlocks[i].SetFloat("_maxViewRange", m_config.LODRanges[m_config.LODRanges.Count - 1].distance);
-
-                lodDistances[i] = m_config.LODRanges[i].distance;
-            }
-        }
         
+        for (int i = 0; i < m_config.LODRanges.Count; i++)
+        {
+            propBlocks[i] = new MaterialPropertyBlock();
+            propBlocksCurved[i] = new MaterialPropertyBlock();
+
+            args[0] = (uint)m_config.LODRanges[i].bladeMesh.GetIndexCount(0);
+            args[1] = (uint)0;
+            args[2] = (uint)m_config.LODRanges[i].bladeMesh.GetIndexStart(0);
+            args[3] = (uint)m_config.LODRanges[i].bladeMesh.GetBaseVertex(0);
+
+            computeBufferArgs[i] = new ComputeBuffer(args.Length, sizeof(uint), ComputeBufferType.IndirectArguments);
+            computeBufferArgsCurved[i] = new ComputeBuffer(args.Length, sizeof(uint), ComputeBufferType.IndirectArguments);
+            computeBufferArgs[i].SetData(args);
+            computeBufferArgsCurved[i].SetData(args);
+        }
+
+
         instances1D = (int)(GrassHashManager.Instance.cellHSize * m_config.distributionDensity);
         instances2D = instances1D * instances1D;
 
         float counter1 = (m_config.distributionDensity * m_config.distributionDensity) * (Mathf.PI * Mathf.Pow(m_config.LODRanges[0].distance, 2f));
         float counter2 = (m_config.distributionDensity * m_config.distributionDensity) * (Mathf.PI * Mathf.Pow(m_config.LODRanges[1].distance, 2f)) - counter1;
         float counter3 = (m_config.distributionDensity * m_config.distributionDensity) * (Mathf.PI * Mathf.Pow(m_config.LODRanges[2].distance, 2f)) - (counter1 + counter2);
-        
+
         outputLODBuffers.Add(new ComputeBuffer((int)counter1, sizeof(float) * 4, ComputeBufferType.Append));
         outputLODBuffers.Add(new ComputeBuffer((int)counter2, sizeof(float) * 4, ComputeBufferType.Append));
         outputLODBuffers.Add(new ComputeBuffer((int)counter3, sizeof(float) * 4, ComputeBufferType.Append));
 
-        outputLODBuffersRotated.Add(new ComputeBuffer((int)counter1, sizeof(float) * 8, ComputeBufferType.Append));
-        outputLODBuffersRotated.Add(new ComputeBuffer((int)counter2, sizeof(float) * 8, ComputeBufferType.Append));
-        outputLODBuffersRotated.Add(new ComputeBuffer((int)counter3, sizeof(float) * 8, ComputeBufferType.Append));
-        
+        outputLODBuffersCurved.Add(new ComputeBuffer((int)counter1, sizeof(float) * 8, ComputeBufferType.Append));
+        outputLODBuffersCurved.Add(new ComputeBuffer((int)counter2, sizeof(float) * 8, ComputeBufferType.Append));
+        outputLODBuffersCurved.Add(new ComputeBuffer((int)counter3, sizeof(float) * 8, ComputeBufferType.Append));
+
 #if UNITY_EDITOR
         int memory = (int)(((counter1 + counter2 + counter3) * 4 * sizeof(float)) / (8f * 1024f * 1024f));
         Debug.Log("LOD buffers : " + memory.ToString("0.00") + "MB");
 #endif  
 
         LOD_Definitions = new ComputeBuffer(m_config.LODRanges.Count, sizeof(float));
-        LOD_Definitions.SetData(lodDistances);
+        LOD_Definitions.SetData(m_config.LODRanges.Select(c => c.distance).ToArray());
 
         m_config.seed = UnityEngine.Random.Range(1, 100);
 
-        boundRender = new Bounds(Vector3.zero, Vector3.one * 100);
+        boundRender = new Bounds(Vector3.zero, Vector3.one * m_config.LODRanges.Last().distance);
 
         positionsBuffer = new Atlas(RenderTextureFormat.ARGBFloat, FilterMode.Point, 8192, instances1D, false);
     }
@@ -316,55 +317,73 @@ public class ObjetcRendererIndirect : MonoBehaviour
     public void PrepareCellToRender(GrassHashCell cell)
     {
         positionsBufferToRender.Add(cell.GetPositionsBuffer(this).tl_size);
-        
+
         collisionsBufferToRender.Add(cell.hasCollisionPage ? cell.collisionPage.tl_size : ObjectCollisionManager.Instance.nullCollisionPage);
     }
 
-    
+
     public void RenderCells()
     {
-        LODManager.Instance.CreateLODs(positionsBuffer, positionsBufferToRender, collisionsBufferToRender, outputLODBuffers, outputLODBuffersRotated, LOD_Definitions);
+        LODManager.Instance.CreateLODs(positionsBuffer, positionsBufferToRender, collisionsBufferToRender, outputLODBuffers, outputLODBuffersCurved, LOD_Definitions);
 
         Profiler.BeginSample("Grass - Render");
 
         boundRender.center = Camera.main.transform.position;
 
         m_config.objectRendererMaterial.SetBuffer("_LODRanges", LOD_Definitions);
-        
+        m_config.objectRendererMaterial.SetInt("_LODCount", LOD_Definitions.count);
+
         for (int i = 0; i < m_config.LODRanges.Count; i++)
         {
             propBlocks[i].SetBuffer("_positionsBuffer", outputLODBuffers[i]);
 
             propBlocks[i].SetInt("_CurrentLOD", i);
 
+            propBlocks[i].SetInt("_isCurvedPass", 0);
+
             ComputeBuffer.CopyCount(outputLODBuffers[i], computeBufferArgs[i], 1 * sizeof(uint));
 
             Graphics.DrawMeshInstancedIndirect(m_config.LODRanges[i].bladeMesh, 0, m_config.objectRendererMaterial, boundRender,
                                            computeBufferArgs[i], 0, propBlocks[i], m_config.shadowCasting, m_config.receiveShadow);
         }
-        
+
+        for (int i = 0; i < m_config.LODRanges.Count; i++)
+        {
+            propBlocksCurved[i].SetBuffer("_positionsBufferRotated", outputLODBuffersCurved[i]);
+
+            propBlocksCurved[i].SetInt("_CurrentLOD", i);
+
+            propBlocksCurved[i].SetInt("_isCurvedPass", 1);
+
+            ComputeBuffer.CopyCount(outputLODBuffersCurved[i], computeBufferArgsCurved[i], 1 * sizeof(uint));
+
+            Graphics.DrawMeshInstancedIndirect(m_config.LODRanges[i].bladeMesh, 0, m_config.objectRendererMaterial, boundRender,
+                                           computeBufferArgsCurved[i], 0, propBlocksCurved[i], m_config.shadowCasting, m_config.receiveShadow);
+        }
+
+
         positionsBufferToRender.Clear();
         collisionsBufferToRender.Clear();
 
         Profiler.EndSample();
     }
 
-    
+
     private void OnApplicationQuit()
     {
-        for(int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
         {
             outputLODBuffers[i]?.Release();
             outputLODBuffers[i] = null;
-            outputLODBuffersRotated[i]?.Release();
-            outputLODBuffersRotated[i] = null;
+            outputLODBuffersCurved[i]?.Release();
+            outputLODBuffersCurved[i] = null;
         }
 
         outputLODBuffers?.Clear();
         outputLODBuffers = null;
 
-        outputLODBuffersRotated?.Clear();
-        outputLODBuffersRotated = null;
+        outputLODBuffersCurved?.Clear();
+        outputLODBuffersCurved = null;
 
         positionsBufferToRender?.Clear();
         positionsBufferToRender = null;
@@ -376,6 +395,7 @@ public class ObjetcRendererIndirect : MonoBehaviour
         positionsBuffer = null;
 
         propBlocks = null;
+        propBlocksCurved = null;
         computeBufferArgs = null;
         computeBufferArgs = null;
     }

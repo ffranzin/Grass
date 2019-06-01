@@ -71,7 +71,10 @@ void ComputeLODs(uint3 id : SV_DispatchThreadID)
 		
 		float4 rotation = _collisionsBufferAtlas[colAtlasPos];
 
-		if(rotation.z > 0.5)
+		uint rotationState = (uint)round(rotation.w);
+		
+		//if((rotationState & RECOVERED) != RECOVERED)
+		if(dot(rotation.xyz, float3(0, 1, 0)) < 0.9)
 		{
 			AddRotatedPositionOnBufferLOD(position, rotation);
 		}

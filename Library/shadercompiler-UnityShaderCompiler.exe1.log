@@ -1,123 +1,101 @@
-Base path: C:/Program Files/Unity/Hub/Editor/2018.3.0f2/Editor/Data
+Base path: C:/Program Files/Unity/Hub/Editor/2018.3.14f1/Editor/Data
 Cmd: initializeCompiler
 Cmd: compileComputeKernel
-  error: 1 plat 4 at LOD_SelectionCompute.compute(35): signed/unsigned mismatch, unsigned assumed
-  error: 2 plat 4 at LOD_SelectionCompute.compute(54): undeclared identifier '_allPagesDesc'
-  api=4 insize=1626 outsize=0 ok=0
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: compileComputeKernel
-  error: 1 plat 4 at LOD_SelectionCompute.compute(36): signed/unsigned mismatch, unsigned assumed
-  error: 1 plat 4 at LOD_SelectionCompute.compute(76): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=2077 outsize=1825 ok=1
-Cmd: compileComputeKernel
-  error: 1 plat 4 at LOD_SelectionCompute.compute(41): signed/unsigned mismatch, unsigned assumed
-  error: 2 plat 4 at LOD_SelectionCompute.compute(49): invalid type for index - index must be a scalar, or a vector with the correct number of dimensions
-  api=4 insize=2264 outsize=0 ok=0
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: compileComputeKernel
-  error: 1 plat 4 at LOD_SelectionCompute.compute(68): signed/unsigned mismatch, unsigned assumed
-  error: 2 plat 4 at LOD_SelectionCompute.compute(87): syntax error: unexpected token '}'
-  error: 1 plat 4 at LOD_SelectionCompute.compute(112): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=3244 outsize=0 ok=0
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: compileComputeKernel
-  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(48): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(57): 'Load': implicit truncation of vector type
   error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
   error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
   error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=5478 outsize=641 ok=1
-Cmd: compileComputeKernel
-  error: 1 plat 4 at LOD_SelectionCompute.compute(58): signed/unsigned mismatch, unsigned assumed
-  error: 1 plat 4 at LOD_SelectionCompute.compute(108): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=3158 outsize=3553 ok=1
-Cmd: compileComputeKernel
-  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
-  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=5503 outsize=641 ok=1
+  error: 1 plat 4 at ObjectCollisionDetect.compute(185): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=5631 outsize=1029 ok=1
 Cmd: initializeCompiler
-Cmd: compileComputeKernel
-  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
-  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
-  error: 2 plat 4 at ObjectCollisionDetect.compute(192): undeclared identifier 'dir'
-  api=4 insize=5677 outsize=0 ok=0
-Cmd: compileComputeKernel
-  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
-  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=5565 outsize=641 ok=1
-Cmd: compileComputeKernel
-  error: 2 plat 4 at Assets/GrassVariables.cginc(60): unrecognized identifier '_collisionmapAtlas'
-  api=4 insize=5569 outsize=0 ok=0
-Cmd: compileComputeKernel
-  error: 2 plat 4 at Assets/GrassVariables.cginc(60): unrecognized identifier '_collisionmapAtlas'
-  api=4 insize=3158 outsize=0 ok=0
 Cmd: initializeCompiler
-Cmd: compileComputeKernel
-  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
-  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(183): signed/unsigned mismatch, unsigned assumed
-  api=4 insize=5567 outsize=449 ok=1
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: compileComputeKernel
-  error: 1 plat 4 at ObjectCollisionDetect.compute(46): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(48): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(57): 'Load': implicit truncation of vector type
   error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
   error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
   error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
-  error: 1 plat 4 at ObjectCollisionDetect.compute(61): 'Load': implicit truncation of vector type
-  api=4 insize=5569 outsize=641 ok=1
+  error: 1 plat 4 at ObjectCollisionDetect.compute(185): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=5631 outsize=613 ok=1
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(48): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(57): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 2 plat 4 at ObjectCollisionDetect.compute(166): invalid subscript 'xz'
+  api=4 insize=5622 outsize=0 ok=0
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at ObjectCollisionDetect.compute(48): signed/unsigned mismatch, unsigned assumed
+  error: 1 plat 4 at ObjectCollisionDetect.compute(57): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(58): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(59): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(60): 'Load': implicit truncation of vector type
+  error: 1 plat 4 at ObjectCollisionDetect.compute(182): signed/unsigned mismatch, unsigned assumed
+  api=4 insize=5527 outsize=1517 ok=1
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
+Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
