@@ -79,7 +79,7 @@ public class GrassHashCell
             PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
         }
 
-        //PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
+        PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
 
         return _positionsBuffer[renderer.rendererID];
     }
@@ -93,7 +93,11 @@ public class GrassHashCell
         get
         {
             if (m_collisionPage == null)
+            {
                 m_collisionPage = GrassHashManager.Instance.GetEmptyCollisionAtlasPage();
+                GrassHashManager.Instance.allCreatedCellsWithCollision.Add(this);
+            }
+
             return m_collisionPage;
         }
     }

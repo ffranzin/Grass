@@ -22,11 +22,8 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
     private static int initializeAtlasPagekernel;
     private static int vectorRecoverStateKernel;
     
-    private static Vector4 aux_cellHeightMapDesc = new Vector4();
-
     private static Vector2 aux_atlasPixeloffsetMin = new Vector2Int();
     private static Vector2 aux_atlasPixeloffsetMax = new Vector2Int();
-    private static Atlas.AtlasPageDescriptor aux_desc_HM;
 
     private static Vector3 aux_objBoundMin = new Vector3();
     private static Vector3 aux_objBoundMax = new Vector3();
@@ -38,15 +35,18 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
     private static int dispatchGroupSize;
 
+    ComputeBuffer allPagesToRecover;
+
     /// <summary>
     /// Used to avoid the use of collision page, more specifically by the recover form method. 
     /// It is necessary for cells, without colliders inside, release his page. These releases occur after X times after the last request. 
     /// </summary>
     public static float maxTimeToGrassRecoverForm = 5f;
 
+
     private void Awake()
     {
-        m_atlasCollisionAtlas = new Atlas(RenderTextureFormat.ARGBHalf, FilterMode.Bilinear, 4096, m_atlasCollisionAtlasPageSize, false);
+        m_atlasCollisionAtlas = new Atlas(RenderTextureFormat.ARGBHalf, FilterMode.Point, 4096, m_atlasCollisionAtlasPageSize, false);
 
         compute = (ComputeShader)Resources.Load("ObjectCollisionDetect");
         computeCollisionKernel = compute.FindKernel("ComputeObjectCollision");
@@ -68,7 +68,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
             
         UpdateInfosOnShaders.Instance.AddNewCallback = UpdateStaticData;
     }
-
+    
 
     /// <summary>
     /// Set all data on page with (x,y,z,w) = (0,1,0,0).
@@ -93,34 +93,37 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
     /// Restore the vector for his initial direction. Only vector that has an angle (in relation vector up) smaller than 'K' .
     /// Used to animate the grassRecover.
     /// </summary>
-    private static void RecoverVectorForInitialStateOnPage(Atlas.AtlasPageDescriptor page)
+    private void RecoverVectorForInitialStateOnPage(List<GrassHashCell> cellsToRecover)
     {
-        if (page == null) return;
+        if (cellsToRecover == null || cellsToRecover.Count == 0) return;
 
-        compute.SetVector("_collisionmapDesc", page.tl_size);
+        List<Vector4> allPages = cellsToRecover.Select(c => c.collisionPage.tl_size).ToList();
 
-        compute.Dispatch(vectorRecoverStateKernel, dispatchGroupSize, dispatchGroupSize, 1);
+        if(allPages == null || allPages.Count == 0) return;
+
+        if (allPagesToRecover == null || allPagesToRecover.count < allPages.Count)
+            ResizeComputeBuffer(ref allPagesToRecover, allPages.Count, sizeof(float) * 4);
+
+        allPagesToRecover.SetData(allPages);
+        
+        compute.SetBuffer(vectorRecoverStateKernel, "_collisionPages", allPagesToRecover);
+
+        compute.SetFloat("_deltaTime", Time.deltaTime);
+
+        compute.Dispatch(vectorRecoverStateKernel, dispatchGroupSize, dispatchGroupSize, allPages.Count);
     }
 
 
     /// <summary>
     /// Call the recover vector form for all cells that collided with something and is probably rendering or colliding with something. (see the 'lastCollisionTime' update).  
     /// </summary>
-    private static void RecoverVectorToInitialState()
+    private void RecoverVectorToInitialState()
     {
-        if (GrassHashManager.Instance.allCreatedCells == null || GrassHashManager.Instance.allCreatedCells.Count == 0) return;
+        if (GrassHashManager.Instance.allCreatedCellsWithCollision == null || GrassHashManager.Instance.allCreatedCellsWithCollision.Count == 0) return;
 
         Profiler.BeginSample("Grass - Recover collision form");
         
-        compute.SetFloat("_deltaTime", Time.deltaTime);
-
-        foreach (GrassHashCell c in GrassHashManager.Instance.allCreatedCells)
-        {
-            if (c.hasCollisionPage && (Time.time - c.lastCollisionTime) < maxTimeToGrassRecoverForm)
-            {
-              //  RecoverVectorForInitialStateOnPage(c.collisionPage);
-            }
-        }
+        RecoverVectorForInitialStateOnPage(GrassHashManager.Instance.allCreatedCellsWithCollision.FindAll(c => c.hasCollisionPage && (Time.time - c.lastCollisionTime) < maxTimeToGrassRecoverForm));
 
         Profiler.EndSample();
     }
@@ -198,6 +201,8 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         compute.Dispatch(computeCollisionKernel, gx, gy, 1);
 
+        cell.lastCollisionTime = Time.time;
+
         Profiler.EndSample();
     }
 
@@ -206,14 +211,18 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
     /// </summary>
     void Update()
     {
+        if (Time.frameCount % 240 == 0)
+        {
+            ResetAllComputeBuffers();
+        }
+
         if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.C))
             DISABLE_GRASS_COLLISION = !DISABLE_GRASS_COLLISION;
 
         if (DISABLE_GRASS_COLLISION) return;
 
         UpdateStaticData();
-
-
+        
         RecoverVectorToInitialState();
 
 #if UNITY_EDITOR
@@ -254,10 +263,25 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
             //#endif
         }
         Profiler.EndSample();
-    }
-    
 
-    
+        
+    }
+
+    private void ResetAllComputeBuffers()
+    {
+        ResizeComputeBuffer(ref allPagesToRecover, 1, sizeof(float) * 4);
+    }
+
+    private void ResizeComputeBuffer(ref ComputeBuffer comp, int counter, int stride)
+    {
+        if (comp != null && comp.stride == stride && comp.count == counter) return;
+
+        comp?.Release();
+        comp = null;
+
+        comp = new ComputeBuffer(counter, stride);
+    }
+
 
     private void UpdateStaticData()
     {
