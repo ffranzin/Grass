@@ -307,7 +307,9 @@ public class ObjetcRendererIndirect : MonoBehaviour
 
         boundRender = new Bounds(Vector3.zero, Vector3.one * m_config.LODRanges.Last().distance);
 
-        positionsBuffer = new Atlas(RenderTextureFormat.ARGBFloat, FilterMode.Point, 8192, instances1D, false);
+        int pages1D = Mathf.CeilToInt(m_config.LODRanges.Last().distance / GrassHashManager.Instance.cellHSize);
+
+        positionsBuffer = new Atlas(RenderTextureFormat.ARGBFloat, FilterMode.Point, (int)(3f * pages1D * instances1D), instances1D, false);
     }
 
 

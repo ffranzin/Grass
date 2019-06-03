@@ -144,14 +144,12 @@ public class TerrainColliderInteraction : MonoBehaviour
     This class is a manager of all colliders that interact with the 'CollisionMap'. 
     */
     public static List<TerrainColliderInteraction> allColliders { get; } = new List<TerrainColliderInteraction>();
-
-
-    public enum CollisionType { Permanent, Temporary, None};
     
     [HideInInspector] public TerrainColliderInteractionShape shape;
 
     public TerrainColliderInteractionShape.ShapeType type;
-    public CollisionType generatedCollisionType;
+
+    public float collisionResultantDuration;
 
     private Vector3 lastPos;
 
@@ -203,6 +201,8 @@ public class TerrainColliderInteraction : MonoBehaviour
 
         }
         _cell = GrassHashManager.Instance.GetHashCell(transform.position);
+
+        collisionResultantDuration = Random.Range(1, 20);
     }
     
 
@@ -217,8 +217,7 @@ public class TerrainColliderInteraction : MonoBehaviour
             for (int i = 0; i < _cells.Count; i++)
             {
                 GrassHashCell c = _cells[i];
-                c.hadCollisionInsideCell = true;
-                c.hadPermanentCollisionInsideCell = generatedCollisionType == CollisionType.Permanent;
+                c.maxCollisionDuration = collisionResultantDuration;
             }
 
             return _cells;
@@ -236,8 +235,7 @@ public class TerrainColliderInteraction : MonoBehaviour
                 
                 if(_cell != null)
                 {
-                    _cell.hadCollisionInsideCell = true;
-                    _cell.hadPermanentCollisionInsideCell = generatedCollisionType == CollisionType.Permanent;
+                    _cell.maxCollisionDuration = collisionResultantDuration;
                 }
             }
             

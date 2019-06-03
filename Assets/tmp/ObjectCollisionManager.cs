@@ -123,7 +123,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         Profiler.BeginSample("Grass - Recover collision form");
         
-        RecoverVectorForInitialStateOnPage(GrassHashManager.Instance.allCreatedCellsWithCollision.FindAll(c => c.hasCollisionPage && (Time.time - c.lastCollisionTime) < maxTimeToGrassRecoverForm));
+        RecoverVectorForInitialStateOnPage(GrassHashManager.Instance.allCreatedCellsWithCollision.FindAll(c => c.hasCollisionPage && c.HasValidCollisionInfoOnPage && (Time.time - c.lastFrameCollisionDetected) < maxTimeToGrassRecoverForm));
 
         Profiler.EndSample();
     }
@@ -152,10 +152,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         ///////
         compute.SetVector("_collisionmapDesc", cell.collisionPage.tl_size);
         ///////
-       // aux_cellHeightMapDesc.x = aux_desc_HM.tl.x;
-       // aux_cellHeightMapDesc.y = aux_desc_HM.tl.y;
-       // compute.SetVector("_heightmapAtlasDesc", aux_cellHeightMapDesc);
-        ///////
+
         compute.SetVector("_cellWorldDesc", cell.boundsWorldMinSize);
 
         Vector3 pos = col.transform.position;
@@ -165,7 +162,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         col.shape.SetShapeComputeShader(compute);
 
-        compute.SetInt("_generateStaticColision", col.generatedCollisionType == TerrainColliderInteraction.CollisionType.Permanent ? 1 : 0);
+        compute.SetFloat("_colisionDuration", col.collisionResultantDuration);
 
         Vector3 radius = col.shape.meshRadius + new Vector3(TerrainColliderInteractionShape.meshRadiusOffset, 0, TerrainColliderInteractionShape.meshRadiusOffset);
 
@@ -201,14 +198,12 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         compute.Dispatch(computeCollisionKernel, gx, gy, 1);
 
-        cell.lastCollisionTime = Time.time;
+        cell.lastTimeCollisionDetected = Time.time;
 
         Profiler.EndSample();
     }
+    
 
-    /// <summary>
-    /// 
-    /// </summary>
     void Update()
     {
         if (Time.frameCount % 240 == 0)
@@ -263,8 +258,6 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
             //#endif
         }
         Profiler.EndSample();
-
-        
     }
 
     private void ResetAllComputeBuffers()

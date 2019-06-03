@@ -22,6 +22,8 @@ float3 _Plane_Normal;
 float3 _Plane_Position;
 float3 _Sphere_Position;
 
+float _colisionDuration;
+
 int _positionsBufferCounter;
 
 float _objectRadius;
@@ -185,11 +187,12 @@ void RecoverCollisionPageToInitialState(uint3 id : SV_DispatchThreadID)
 
 	uint state = (uint)round(sample.w);
 
-	if(false &&	((state & RECOVERED) == RECOVERED) ||
+	/*
+	if(((state & RECOVERED) == RECOVERED) ||
 		((state & TEMP_UNRECOVERABLE) == TEMP_UNRECOVERABLE) ||
 		((state & PERM_UNRECOVERABLE) == PERM_UNRECOVERABLE))
 		return;
-	
+	*/
     float mag = length(sample.xyz);
 
 	float3 dir = normalize(sample.xyz);

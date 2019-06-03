@@ -1,11 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using UnityEngine.Profiling;
+using System.Linq;
 
 public class GrassHashManager : Singleton<GrassHashManager>
 {
     public ComputeShader distributePositionsCompute;
-    
+
     /// <summary>
     /// Store a reference of created cells. The access of each cell if through of world position (without camera offset).  
     /// </summary>
@@ -27,6 +29,9 @@ public class GrassHashManager : Singleton<GrassHashManager>
 
     Rect hashBounds;
 
+    const int frameCountToReleasePositionsBuffer = 50;
+    const int frameCountToReleaseCollisionBuffer = 50;
+
     private void Awake()
     {
         Vector2 tSize = Vector2.one * terrainSize;
@@ -39,7 +44,7 @@ public class GrassHashManager : Singleton<GrassHashManager>
     {
         cellHSize = cellSize.x;
         cellVSize = cellSize.y;
-        
+
         cellHCounter = Mathf.CeilToInt((float)(terrainSize.x / cellSize.x));
         cellVCounter = Mathf.CeilToInt((float)(terrainSize.y / cellSize.y));
 
@@ -51,11 +56,9 @@ public class GrassHashManager : Singleton<GrassHashManager>
         hashDebug.Apply();
 
         hashBounds = new Rect(Vector2.zero, terrainSize);
-       // hashBounds.min = Vector2.zero;
-        //hashBounds.max = terrainSize;
-        
+
         GameObject.Find("HashDebug").GetComponent<RawImage>().texture = hashDebug;
-        
+
         Debug.Log("Object hash initialized [" + cellHCounter + ", " + cellVCounter + "].");
     }
 
@@ -76,7 +79,7 @@ public class GrassHashManager : Singleton<GrassHashManager>
 
         hash[l, c] = hash[l, c] ?? new GrassHashCell(l, c);
 
-        hash[l, c].lastCellRequestedTime = Time.time;
+        hash[l, c].lastFrameRequestedCell = Time.frameCount;
         return hash[l, c];
     }
 
@@ -91,7 +94,7 @@ public class GrassHashManager : Singleton<GrassHashManager>
 
         hash[l, c] = hash[l, c] ?? new GrassHashCell(l, c);
 
-        hash[l, c].lastCellRequestedTime = Time.time;
+        hash[l, c].lastFrameRequestedCell = Time.frameCount;
         return hash[l, c];
     }
 
@@ -120,8 +123,8 @@ public class GrassHashManager : Singleton<GrassHashManager>
             for (int j = iniY; j <= endY; j++)
             {
                 hash[i, j] = hash[i, j] ?? new GrassHashCell(i, j);
-                hash[i, j].lastCellRequestedTime = Time.time;
-                
+                hash[i, j].lastFrameRequestedCell = Time.frameCount;
+
                 float dist = Mathf.Sqrt(hash[i, j].boundsWorld.SqrDistance(position));
 
                 if (dist < radius)
@@ -148,6 +151,55 @@ public class GrassHashManager : Singleton<GrassHashManager>
     {
         return hashBounds.Contains(pos);
     }
+
+
+
+    private void ReleasePositionsBuffer(int frames = frameCountToReleasePositionsBuffer)
+    {
+        Profiler.BeginSample("Grass - Release PositionsBuffer");
+        float t = Time.frameCount;
+
+        int rendererCount = ObjectRendererManager.Instance.objectRenderers.Length;
+
+        for (int i = 0; i < allCreatedCells.Count; i++)
+        {
+            if (!allCreatedCells[i].hasPositionBuffer) continue;
+
+            for (int j = 0; j < rendererCount; j++)
+            {
+                if ((t - allCreatedCells[i].lastFrameRequestedPositionsBuffer[j]) >= frames)
+                    allCreatedCells[i].ReleasePositionsBuffer(j);
+            }
+        }
+
+        Profiler.EndSample();
+    }
+
+
+    private void ReleaseCollisionsPage(int frames = frameCountToReleaseCollisionBuffer)
+    {
+        Profiler.BeginSample("Grass - Release CollsionsPage");
+        float t = Time.frameCount;
+        
+        for (int i = 0; i < allCreatedCellsWithCollision.Count; i++)
+        {
+            if ((t - allCreatedCellsWithCollision[i].lastFrameCollisionDetected) >= frames)
+                allCreatedCellsWithCollision[i].ReleaseCollisionPage();
+        }
+        
+        allCreatedCellsWithCollision.RemoveAll(c => !c.hasCollisionPage);
+
+        Profiler.EndSample();
+    }
+
+
+    public void ReleasePositionsBufferForced()
+    {
+        Profiler.BeginSample("Grass - Release PositionsBuffer forced");
+        ReleasePositionsBuffer(1);
+        Profiler.EndSample();
+    }
+
 
     /// <summary>
     /// Find unused cells and release all used memory. This process accur slowly to avoid any processing peak.  
@@ -227,11 +279,16 @@ public class GrassHashManager : Singleton<GrassHashManager>
 #if UNITY_EDITOR
         // UpdateInfos();
 #endif
-       
 
-        //ReleaseActiveCells();
+
+        if (Time.frameCount % 100 == 0)
+        {
+            ReleaseCollisionsPage();
+            ReleasePositionsBuffer();
+
+        }
     }
-    
+
 
     private void OnDestroy()
     {
@@ -249,7 +306,7 @@ public class GrassHashManager : Singleton<GrassHashManager>
 
 
     public static Texture2D hashDebug;
-    
+
 
     public void SetNewCell(int x, int y)
     {
@@ -259,10 +316,10 @@ public class GrassHashManager : Singleton<GrassHashManager>
 
 
     #region DEBUG_INFOS
-    
+
     public void OnDrawGizmos()
     {
-        foreach(GrassHashCell c in allCreatedCells)
+        foreach (GrassHashCell c in allCreatedCells)
         {
             Gizmos.DrawLine(Vector3.zero, new Vector3(0, 0, terrainSize));
             Gizmos.DrawLine(Vector3.zero, new Vector3(terrainSize, 0, 0));
