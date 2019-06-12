@@ -17,6 +17,26 @@ int _distribuitionSeed;
 
 RWTexture2D<float4> _positionsBufferAtlas;
 
+float frequency;
+float gain;
+float lacunarity;
+float amplitude;
+int octaves;
+
+
+inline float ScaleNoise(float2 seed)
+{
+	float highFrequence = abs(simplexfbm2D(seed, octaves, frequency, lacunarity, gain, amplitude));
+	float highFrequence2 = abs(simplexfbm2D(seed, octaves, frequency, lacunarity, gain, amplitude * 1.3));
+
+	float lowFrequence = abs(simplexnoise2D(seed));
+
+	return max(lowFrequence, highFrequence * highFrequence2);
+}
+
+
+
+
 [numthreads(8,8,1)]
 void ComputePositions(uint3 id : SV_DispatchThreadID)
 {
@@ -32,7 +52,7 @@ void ComputePositions(uint3 id : SV_DispatchThreadID)
 	float2 posWorld = uv * _cellDesc.zw;
 	posWorld += _cellDesc.xy;
 
-	float scale = max(0.5, abs(gradientfbm2D(posWorld % 100, 2, 2, 1, 0.5, 2)));
+	float scale = ScaleNoise(posWorld % 100);
 	
 	_positionsBufferAtlas[id.xy + _positionsBufferDesc.xy] = float4(posWorld.x, 0, posWorld.y, scale);
 }

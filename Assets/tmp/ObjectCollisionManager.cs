@@ -162,7 +162,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         col.shape.SetShapeComputeShader(compute);
 
-        compute.SetFloat("_colisionDuration", col.collisionResultantDuration);
+        compute.SetFloat("_collisionRecoverSpeed", col.collisionRecoverSpeed);
 
         Vector3 radius = col.shape.meshRadius + new Vector3(TerrainColliderInteractionShape.meshRadiusOffset, 0, TerrainColliderInteractionShape.meshRadiusOffset);
 

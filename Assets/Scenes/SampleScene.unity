@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 170076734}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -517,6 +517,11 @@ MonoBehaviour:
       bladeMesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
     - distance: 150
       bladeMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    frequency: 2
+    gain: 0.5
+    lacunarity: 1
+    amplitude: 2
+    octaves: 2
   rendererID: 0
   positionsBuffer:
     texture: {fileID: 0}
@@ -729,21 +734,26 @@ MonoBehaviour:
   m_config:
     minScale: 0
     maxScale: 1
-    distributionDensity: 4
+    distributionDensity: 5
     receiveShadow: 0
     shadowCasting: 0
     useMipMap: 1
     mipMapBias: -1.5
-    seed: 0
+    seed: 25
     objectRendererMaterial: {fileID: 2100000, guid: 89e7731d84f894f4a9d5efbf5e623ab4,
       type: 2}
     LODRanges:
     - distance: 50
-      bladeMesh: {fileID: 4300014, guid: 8e261a8582dee044596708860ef2839c, type: 3}
+      bladeMesh: {fileID: 4300002, guid: 8e261a8582dee044596708860ef2839c, type: 3}
     - distance: 100
-      bladeMesh: {fileID: 4300012, guid: 8e261a8582dee044596708860ef2839c, type: 3}
+      bladeMesh: {fileID: 4300006, guid: 8e261a8582dee044596708860ef2839c, type: 3}
     - distance: 150
-      bladeMesh: {fileID: 4300010, guid: 8e261a8582dee044596708860ef2839c, type: 3}
+      bladeMesh: {fileID: 4300004, guid: 8e261a8582dee044596708860ef2839c, type: 3}
+    frequency: 0.7
+    gain: 1.4
+    lacunarity: 1.9
+    amplitude: 0.7
+    octaves: 2
   rendererID: 0
   positionsBuffer:
     texture: {fileID: 0}
@@ -859,7 +869,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
-  generatedCollisionType: 0
+  collisionRecoverSpeed: 0
   consideOnlyInsideCell: 0
 --- !u!23 &1600489077
 MeshRenderer:

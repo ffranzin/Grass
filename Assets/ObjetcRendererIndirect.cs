@@ -40,6 +40,12 @@ public class GrassConfig
     public List<Grass_LOD> LODRanges;
 
     public float distanceViewRange { get { return LODRanges[LODRanges.Count - 1].distance; } }
+
+    public float frequency = 2;
+    public float gain = 0.5f;
+    public float lacunarity = 1;
+    public float amplitude = 2;
+    public int octaves = 2;
 }
 
 

@@ -9,6 +9,8 @@
 //Maintain this values below matching with the enum 'ShapeType' in 'ColllisionShape.cs'.
 #define COLLIDER_PLANE 0
 #define COLLIDER_SPHERE 1
+
+
 #define RECOVERED_DIRECTION float3(0.0, 1.0, 0.0)
 RWTexture2D<float4> _collisionmapAtlas;
 RWTexture2D<float> _heightmapAtlas;
@@ -22,7 +24,7 @@ float3 _Plane_Normal;
 float3 _Plane_Position;
 float3 _Sphere_Position;
 
-float _colisionDuration;
+float _collisionRecoverSpeed;
 
 int _positionsBufferCounter;
 
@@ -50,7 +52,7 @@ void InitializeCollisionPage(uint3 id : SV_DispatchThreadID)
     if (id.x > _collisionmapDesc.z || id.y > _collisionmapDesc.z)
         return;
 		
-	_collisionmapAtlas[_collisionmapDesc.xy + id.xy] = float4(RECOVERED_DIRECTION, RECOVERED);
+	_collisionmapAtlas[_collisionmapDesc.xy + id.xy] = float4(RECOVERED_DIRECTION, INFINITY);
 }
 
 
@@ -69,13 +71,15 @@ float BilinearHeightMap(float2 atlasPosHM)
 }
 
 
-void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, uint state)
+void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, float currentSpeed)
 {
 	float3 grassDir = normalize(grassVector);
 	float mag = length(grassVector);
 	float distance = INFINITY;
 
 	float3 colisionPos = float3(0,0,0);
+
+	float speed = _collisionRecoverSpeed * 0.1;
 
 	//////////////////////////
 	//FIND COLISION DISTANCE//
@@ -84,16 +88,11 @@ void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, uint sta
 	{
 		distance = RayPlaneIntersect(wPos, grassDir, _Plane_Position, _Plane_Normal);
 		colisionPos = wPos + grassDir * distance;
-
+		
 		if(!PointInsideArbitraryQuad(colisionPos, _Plane_Vertices))
-		{
 			distance = INFINITY;
-			state = state & REVERT_TEMP_UNRECOVERABLE;
-		}
 		else
-		{
-			state = state | TEMP_UNRECOVERABLE;
-		}
+			speed = 0;
 	}
 	else if(_colliderShape == COLLIDER_SPHERE)
 	{
@@ -102,16 +101,13 @@ void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, uint sta
 		colisionPos = wPos + grassDir * distance;
 
 		if(length(colisionPos.xz - _Sphere_Position.xz) > _objectRadius)
-		{
 			distance = INFINITY;
-			state = state & REVERT_TEMP_UNRECOVERABLE;
-		}
 		else
-		{
-			state = state | TEMP_UNRECOVERABLE;
-		}
+			speed = 0;
 	}
 	
+	
+
 	//////////////////////////
 	//FIND NEW COLISION POS //
 	//////////////////////////
@@ -124,14 +120,9 @@ void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, uint sta
 		float3 pointOutOfObject = colisionPos + normalize(_forceDir) * d;
 
 		grassVector = normalize(pointOutOfObject - wPos) * mag;
-
-		if(_generateStaticColision == 1)
-			state = state | PERM_UNRECOVERABLE;
-
-		state = state & REVERT_RECOVERED;
 	}
 	
-	_collisionmapAtlas[atlasPos] = float4(grassVector, state);
+	_collisionmapAtlas[atlasPos] = float4(grassVector, 0);
 }
 
 
@@ -156,23 +147,36 @@ void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
 
 	float2 atlasPosHM = _heightmapAtlasDesc.xy +  (uv * (_heightmapAtlasDesc.z - 2));
 	
-	uint state = (uint)round(collisionSample.w);
-	
 	if(!IsPointInsideCircle(worldPos.xz + collisionSample.xz, _colliderPosition.xz, _objectRadius))
 	{
-		_collisionmapAtlas[atlasPos] = float4(collisionSample.xyz, state & REVERT_TEMP_UNRECOVERABLE);
+		_collisionmapAtlas[atlasPos] = float4(collisionSample.xyz, _collisionRecoverSpeed);
 		return;
 	}
 
 	worldPos.y = 0.05;// BilinearHeightMap(atlasPosHM);
 	
-	FindCollisionPos(collisionSample.xyz, atlasPos, worldPos, state);
+	FindCollisionPos(collisionSample.xyz, atlasPos, worldPos, collisionSample.w);
 }
 
 
 
 inline int2 GetCollisionPageMin(uint3 id)	{return _collisionPages[id.z].xy;}
 inline int GetCollisionPageSize(uint3 id)	{return _collisionPages[id.z].z;}
+
+
+
+float3 MyInterpolation(float3 v1, float3 v2, float increment)
+{
+	float v2_mag = length(v2);
+
+	v1 = normalize(v1);
+	v2 = normalize(v2);
+
+	v2 = v2 + normalize(v1 - v2) * increment * _deltaTime;
+	
+	return normalize(v2) * v2_mag;
+}
+
 
 
 [numthreads(8, 8, 1)]
@@ -185,24 +189,16 @@ void RecoverCollisionPageToInitialState(uint3 id : SV_DispatchThreadID)
 	
 	float4 sample = _collisionmapAtlas[atlasPos];
 
-	uint state = (uint)round(sample.w);
+	if(sample.w < 0.00001)	return;
 
-	/*
-	if(((state & RECOVERED) == RECOVERED) ||
-		((state & TEMP_UNRECOVERABLE) == TEMP_UNRECOVERABLE) ||
-		((state & PERM_UNRECOVERABLE) == PERM_UNRECOVERABLE))
-		return;
-	*/
     float mag = length(sample.xyz);
 
 	float3 dir = normalize(sample.xyz);
 
-	float randSpeed = 1.0 + sin(atlasPos.x * atlasPos.y);
+	float speed = sample.w + 0.1;
 
-	if(dot(float3(0, 1, 0), dir) < 0.999)	
-		sample.xyz = normalize(lerp(dir, RECOVERED_DIRECTION, _deltaTime * (RECOVER_SPEED + randSpeed))) * mag;
-	else
-		sample.w = state | RECOVERED;
+	if(dot(RECOVERED_DIRECTION, dir) < 0.999)	
+		sample.xyz = MyInterpolation(RECOVERED_DIRECTION, dir, speed);
 	
 	_collisionmapAtlas[atlasPos] = sample;
 }	

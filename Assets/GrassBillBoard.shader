@@ -150,10 +150,10 @@ Shader "Nature/GrassBillBoard"
 
 				vs.debug = collisionSampleDebug;
 
-				//vs.normal = UnityObjectToWorldNormal(v.normal) ;
-				//vs.normal *= (dot(vs.eyeVec, vs.normal) > 0 ? -1 : 1);
+				vs.normal = UnityObjectToWorldNormal(v.normal) ;
+				vs.normal *= (dot(vs.eyeVec, vs.normal) > 0 ? -1 : 1);
 				//vs.normal = UnityObjectToWorldNormal(float3(0,1,0));//  * (dot(vs.eyeVec, normalWorld) > 0 ? -1 : 1);;
-				vs.normal = float3(0,1,0);//  * (dot(vs.eyeVec, normalWorld) > 0 ? -1 : 1);;
+				//vs.normal =  float3(0, 1, 0);// * (dot(vs.eyeVec, vs.normal) > 0 ? -1 : 1);;
 
 				//----------------------------------------------------------------------------------------
 				// TBN definition 

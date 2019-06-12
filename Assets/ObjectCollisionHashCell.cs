@@ -30,7 +30,7 @@ public class GrassHashCell
     public bool hasPositionBuffer { get { return _hasPositionBuffer; } }
 
     public float m_collisionResultantDuration = 0;
-    public float maxCollisionDuration
+    public float slowerRecoverSpeed
     {
         get
         {
@@ -135,7 +135,8 @@ public class GrassHashCell
     {
         get
         {
-            return (Time.time - lastTimeCollisionDetected) < maxCollisionDuration;
+            return true;
+            return (Time.time - lastTimeCollisionDetected) < (1f / slowerRecoverSpeed);
         }
     }
     
@@ -148,7 +149,6 @@ public class GrassHashCell
             m_collisionPage = null;
             return;
         }
-        
     }
 
 

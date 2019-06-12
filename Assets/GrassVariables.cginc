@@ -3,7 +3,7 @@
 #define GRASS_VARIABLES
 
 #define NaN 0.0/0.0
-#define SCALE_CUTOFF 0.05
+#define SCALE_CUTOFF 0.15
 #define ALPHA_CUTOFF 0.15
 
 #define true 1
@@ -73,18 +73,6 @@ StructuredBuffer<float> _LODRanges;
 //----------------------------------------------------------------------------------------
 float2 seed;
 float4 collisionSampleDebug;
-
-
-///Splat code definition
-#define RECOVERED				1				//00000001 
-#define PERM_UNRECOVERABLE      2				//00000010
-#define TEMP_UNRECOVERABLE      4				//00000100
-
-#define REVERT_RECOVERED			   254		//11111110 
-#define REVERT_PERM_UNRECOVERABLE      253		//11111101
-#define REVERT_TEMP_UNRECOVERABLE      251		//11111011 
-
-
 
 
 

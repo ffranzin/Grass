@@ -149,7 +149,7 @@ public class TerrainColliderInteraction : MonoBehaviour
 
     public TerrainColliderInteractionShape.ShapeType type;
 
-    public float collisionResultantDuration;
+    public float collisionRecoverSpeed;
 
     private Vector3 lastPos;
 
@@ -202,7 +202,7 @@ public class TerrainColliderInteraction : MonoBehaviour
         }
         _cell = GrassHashManager.Instance.GetHashCell(transform.position);
 
-        collisionResultantDuration = Random.Range(1, 20);
+        collisionRecoverSpeed = Random.Range(0.01f, 1f);
     }
     
 
@@ -217,7 +217,7 @@ public class TerrainColliderInteraction : MonoBehaviour
             for (int i = 0; i < _cells.Count; i++)
             {
                 GrassHashCell c = _cells[i];
-                c.maxCollisionDuration = collisionResultantDuration;
+                c.slowerRecoverSpeed = collisionRecoverSpeed;
             }
 
             return _cells;
@@ -235,7 +235,7 @@ public class TerrainColliderInteraction : MonoBehaviour
                 
                 if(_cell != null)
                 {
-                    _cell.maxCollisionDuration = collisionResultantDuration;
+                    _cell.slowerRecoverSpeed = collisionRecoverSpeed;
                 }
             }
             

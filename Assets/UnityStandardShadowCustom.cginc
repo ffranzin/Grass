@@ -89,8 +89,8 @@ VertexOutputShadowCaster vertShadowCasterCustom(appdata_full v, uint unity_Insta
     
     UNITY_INITIALIZE_OUTPUT(VertexOutputShadowCaster, o);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-
-    if (unity_ObjectToWorld._22 < SCALE_CUTOFF)
+	
+    if(setCulled)
     {
         v.vertex.xyz = float3(NaN, NaN, NaN);
         return o;
