@@ -1,6 +1,7 @@
 ﻿
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.UI;
@@ -128,13 +129,186 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         Profiler.EndSample();
     }
 
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct CollisionInfo
+    {
+        public Vector4 pageDesc;
+        public Vector4 cellDesc;
+        public Vector4 colliderPosition;
+        public Vector4 force;
+        public Vector4 boundMinMax;
+        public float recoverSpeed;
+
+        //----------
+
+        public float objectRadius;
+        public int shapeType;
+        
+        public Matrix4x4 planeVertices;
+        public Vector4 planeNormal;
+    }
+
+
+    private void PrepareToCompute(List<CollisionInfo> infos)
+    {
+        if (infos == null || infos.Count == 0) return;
+
+        ComputeBuffer infosBuffer = new ComputeBuffer(infos.Count, Marshal.SizeOf(typeof(CollisionInfo)));
+        infosBuffer.SetData(infos);
+
+        compute.SetBuffer(computeCollisionKernel, "_collisionPages1", infosBuffer);
+        compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
+
+        compute.Dispatch(computeCollisionKernel, 2, 2, infos.Count);
+
+        Debug.LogError("Reduzir os grupos");
+    }
+
+
     /// <summary>
     /// Detect collision on GPU for active and moving colliders.
     /// The collision is calculated around a radius of collider mesh. For this we calculate some 
     /// offset inside the page and the amount os pixels that need be verified if is or not colliding with the object  
     /// (This is used to reduce the amount of groups dispatched on GPU and increase the performance).
     /// </summary>
-    private void ComputeCollision(TerrainColliderInteraction col, GrassHashCell cell)
+    private CollisionInfo ComputeCollision(TerrainColliderInteraction col, GrassHashCell cell)
+    {
+        CollisionInfo cf = new CollisionInfo();
+
+        Bounds bound = cell.boundsWorld;
+        Vector3 min = bound.min;
+        Vector3 size = bound.size;
+
+        cf.pageDesc = cell.collisionPage.tl_size;
+        cf.cellDesc = cell.boundsWorldMinSize;
+        cf.colliderPosition = col.transform.position;
+        cf.force = col.forceXZ;
+        cf.recoverSpeed = col.collisionRecoverSpeed;
+        
+        col.shape.SetShapeComputeShader(ref cf);
+
+        Vector3 radius = col.shape.meshRadius + new Vector3(TerrainColliderInteractionShape.meshRadiusOffset, 0, TerrainColliderInteractionShape.meshRadiusOffset);
+
+        Vector3 pos = transform.position;
+
+        aux_objBoundMin = pos - radius;
+        aux_objBoundMax = pos + radius;
+
+        aux_uvMin.x = Mathf.Clamp01((aux_objBoundMin.x - min.x) / size.x);
+        aux_uvMin.y = Mathf.Clamp01((aux_objBoundMin.z - min.z) / size.z);
+
+        aux_uvMax.x = Mathf.Clamp01((aux_objBoundMax.x - min.x) / size.x);
+        aux_uvMax.y = Mathf.Clamp01((aux_objBoundMax.z - min.z) / size.z);
+
+        aux_atlasPixeloffsetMin.x = (int)(aux_uvMin.x * m_atlasCollisionAtlasPageSize); //mathf.floorToInt
+        aux_atlasPixeloffsetMin.y = (int)(aux_uvMin.y * m_atlasCollisionAtlasPageSize);
+
+        aux_atlasPixeloffsetMax.x = 1 + (int)(aux_uvMax.x * m_atlasCollisionAtlasPageSize); //mathf.ceilToInt
+        aux_atlasPixeloffsetMax.y = 1 + (int)(aux_uvMax.y * m_atlasCollisionAtlasPageSize);
+
+        cf.boundMinMax = new Vector4(aux_atlasPixeloffsetMin.x, aux_atlasPixeloffsetMin.y, aux_atlasPixeloffsetMax.x, aux_atlasPixeloffsetMax.y);
+        
+
+        cell.lastTimeCollisionDetected = Time.time;
+
+        return cf;
+    }
+    
+
+    void Update()
+    {
+        if (Time.frameCount % 240 == 0)
+        {
+            ResetAllComputeBuffers();
+        }
+
+        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.C))
+            DISABLE_GRASS_COLLISION = !DISABLE_GRASS_COLLISION;
+
+        if (DISABLE_GRASS_COLLISION) return;
+
+        UpdateStaticData();
+        
+       // RecoverVectorToInitialState();
+
+#if UNITY_EDITOR
+        info_cellsSelected.Clear();
+        info_groupsDispatchedCount = 0;
+#endif
+
+        if (TerrainColliderInteraction.allColliders == null || TerrainColliderInteraction.allColliders.Count == 0)
+        {
+            return;
+        }
+
+        Profiler.BeginSample("Grass - Collision Detection " + TerrainColliderInteraction.allColliders.Count);
+
+        List<CollisionInfo> infos = new List<CollisionInfo>();
+
+        foreach (TerrainColliderInteraction c in TerrainColliderInteraction.allColliders)
+        {
+            if (c == null || c.forceXZ.magnitude < 0.001f || !c.activeCollision)
+            {
+                continue;
+            }
+
+            if (c.consideOnlyInsideCell)
+            {
+                infos.Add(ComputeCollision(c, c.cell));
+            }
+            else
+            {
+                List<GrassHashCell> cells = c.cells;
+
+                foreach (GrassHashCell cell in cells)
+                {
+                    infos.Add(ComputeCollision(c, cell));
+                }
+            }
+        }
+
+        PrepareToCompute(infos);
+
+        Profiler.EndSample();
+    }
+
+    private void ResetAllComputeBuffers()
+    {
+        ResizeComputeBuffer(ref allPagesToRecover, 1, sizeof(float) * 4);
+    }
+
+    private void ResizeComputeBuffer(ref ComputeBuffer comp, int counter, int stride)
+    {
+        if (comp != null && comp.stride == stride && comp.count == counter) return;
+
+        comp?.Release();
+        comp = null;
+
+        comp = new ComputeBuffer(counter, stride);
+    }
+
+
+    private void UpdateStaticData()
+    {
+        compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
+        compute.SetTexture(initializeAtlasPagekernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
+        compute.SetTexture(vectorRecoverStateKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
+    }
+
+    private void OnApplicationQuit()
+    {
+        hadCollisionOnPage?.Release();
+    }
+
+
+    /// <summary>
+    /// Detect collision on GPU for active and moving colliders.
+    /// The collision is calculated around a radius of collider mesh. For this we calculate some 
+    /// offset inside the page and the amount os pixels that need be verified if is or not colliding with the object  
+    /// (This is used to reduce the amount of groups dispatched on GPU and increase the performance).
+    /// </summary>
+    private void ComputeCollision1(TerrainColliderInteraction col, GrassHashCell cell)
     {
         Profiler.BeginSample("Grass - Collision Detection dispatch");
 
@@ -160,7 +334,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         compute.SetVector("_forceDir", col.forceXZ);
 
-        col.shape.SetShapeComputeShader(compute);
+        //col.shape.SetShapeComputeShader(compute);
 
         compute.SetFloat("_collisionRecoverSpeed", col.collisionRecoverSpeed);
 
@@ -201,91 +375,6 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         cell.lastTimeCollisionDetected = Time.time;
 
         Profiler.EndSample();
-    }
-    
-
-    void Update()
-    {
-        if (Time.frameCount % 240 == 0)
-        {
-            ResetAllComputeBuffers();
-        }
-
-        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.C))
-            DISABLE_GRASS_COLLISION = !DISABLE_GRASS_COLLISION;
-
-        if (DISABLE_GRASS_COLLISION) return;
-
-        UpdateStaticData();
-        
-        RecoverVectorToInitialState();
-
-#if UNITY_EDITOR
-        info_cellsSelected.Clear();
-        info_groupsDispatchedCount = 0;
-#endif
-
-        if (TerrainColliderInteraction.allColliders == null || TerrainColliderInteraction.allColliders.Count == 0)
-        {
-            return;
-        }
-
-        Profiler.BeginSample("Object - Collision Detection");
-        foreach (TerrainColliderInteraction c in TerrainColliderInteraction.allColliders)
-        {
-            if (c == null || c.forceXZ.magnitude < 0.001f || !c.activeCollision)
-            {
-                continue;
-            }
-
-            if (c.consideOnlyInsideCell)
-            {
-                ComputeCollision(c, c.cell);
-            }
-            else
-            {
-                List<GrassHashCell> cells = c.cells;
-
-                foreach (GrassHashCell cell in cells)
-                {
-                    ComputeCollision(c, cell);
-                }
-            }
-
-
-            //#if UNITY_EDITOR
-            //            info_cellsSelected.AddRange(c.cells);
-            //#endif
-        }
-        Profiler.EndSample();
-    }
-
-    private void ResetAllComputeBuffers()
-    {
-        ResizeComputeBuffer(ref allPagesToRecover, 1, sizeof(float) * 4);
-    }
-
-    private void ResizeComputeBuffer(ref ComputeBuffer comp, int counter, int stride)
-    {
-        if (comp != null && comp.stride == stride && comp.count == counter) return;
-
-        comp?.Release();
-        comp = null;
-
-        comp = new ComputeBuffer(counter, stride);
-    }
-
-
-    private void UpdateStaticData()
-    {
-        compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
-        compute.SetTexture(initializeAtlasPagekernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
-        compute.SetTexture(vectorRecoverStateKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
-    }
-
-    private void OnApplicationQuit()
-    {
-        hadCollisionOnPage?.Release();
     }
 
 #if UNITY_EDITOR

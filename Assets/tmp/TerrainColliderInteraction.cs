@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using static ObjectCollisionManager;
 
 public class TerrainColliderInteractionShape
 {
@@ -95,44 +96,34 @@ public class TerrainColliderInteractionShape
     /// <summary>
     /// Set the parameters of the plane on the GPU.
     /// </summary>
-    private void SetComputeShaderParametersPlane(ComputeShader compute)
+    private void SetComputeShaderParametersPlane(CollisionInfo cf)
     {
         ApplyTRSOnVertices();
 
-        compute.SetVectorArray("_Plane_Vertices", TRSVertices);
-        compute.SetVector("_Plane_Normal", transform.up.normalized);
-
-        compute.SetVector("_Plane_Position", transform.position);
+        cf.planeNormal = transform.up;
+        cf.planeVertices = new Matrix4x4(TRSVertices[0], TRSVertices[1], TRSVertices[2], TRSVertices[3]);
     }
 
-
-    /// <summary>
-    /// Set the parameters of the sphere on the GPU.
-    /// </summary>
-    private void SetComputeShaderParametersSphere(ComputeShader compute)
-    {
-        compute.SetVector("_Sphere_Position", transform.position);
-    }
+    
 
 
     /// <summary>
     /// Call the method to pass the parameters of this shape on GPU. 
     /// </summary>
-    public void SetShapeComputeShader(ComputeShader compute)
+    public void SetShapeComputeShader(ref CollisionInfo cf)
     {
         switch (type)
         {
             case ShapeType.Plane:
-                SetComputeShaderParametersPlane(compute);
+                SetComputeShaderParametersPlane(cf);
                 break;
             case ShapeType.Sphere:
-                SetComputeShaderParametersSphere(compute);
                 break;
             default:
                 break;
         }
-        compute.SetInt("_colliderShape", (int)type);
-        compute.SetFloat("_objectRadius", meshRadius.x);
+        cf.objectRadius = meshRadius.x;
+        cf.shapeType = (int)type;
     }
 }
 

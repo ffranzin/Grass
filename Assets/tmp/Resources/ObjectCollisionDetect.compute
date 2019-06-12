@@ -17,12 +17,31 @@ RWTexture2D<float> _heightmapAtlas;
 float4 _OriginOffset;
 float _deltaTime;
 
+#define Vector4 float4
+#define Matrix4x4 float4x4
+     struct CollisionInfo
+    {
+         Vector4 pageDesc;
+         Vector4 cellDesc;
+         Vector4 colliderPosition;
+         Vector4 force;
+         Vector4 boundMinMax;
+         float recoverSpeed;
+
+        //----------
+
+         float objectRadius;
+         int shapeType;
+        
+         Matrix4x4 planeVertices;
+         Vector4 planeNormal;
+    };
+
+
 float3 _forceDir;
 
 float4 _Plane_Vertices[4];
 float3 _Plane_Normal;
-float3 _Plane_Position;
-float3 _Sphere_Position;
 
 float _collisionRecoverSpeed;
 
@@ -39,6 +58,8 @@ float4 _boundMax;
 StructuredBuffer<float4> _positionsBuffer;
 
 StructuredBuffer<float4> _collisionPages;
+
+StructuredBuffer<CollisionInfo> _collisionPages1;
 
 #include "ObjectCollisionDetectUtils.cginc"
 
@@ -71,7 +92,44 @@ float BilinearHeightMap(float2 atlasPosHM)
 }
 
 
-void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, float currentSpeed)
+/*
+     struct CollisionInfo
+    {
+         Vector4 pageDesc;
+         Vector4 cellDesc;
+         Vector4 colliderPosition;
+         Vector4 force;
+         Vector4 boundMinMax;
+         float recoverSpeed;
+
+        //----------
+
+         float objectRadius;
+         int shapeType;
+        
+         Matrix4x4 planeVertices;
+         Vector4 planeNormal;
+    };*/
+
+
+inline float2 CellWorldMin(uint3 id) {return _collisionPages1[id.z].cellDesc.xy;}
+inline float2 CellWorldSize(uint3 id) {return _collisionPages1[id.z].cellDesc.zw;}
+
+inline float2 PageMin(uint3 id) {return _collisionPages1[id.z].pageDesc.xy;}
+inline float PageSize(uint3 id) {return _collisionPages1[id.z].pageDesc.z;}
+
+inline float2 BoundMin(uint3 id) {return _collisionPages1[id.z].boundMinMax.xy;}
+
+inline float3 ColliderPosition(uint3 id) {return _collisionPages1[id.z].colliderPosition.xyz;}
+inline float2 ColliderPositionXZ(uint3 id) {return _collisionPages1[id.z].colliderPosition.xz;}
+
+inline float ColliderRadius(uint3 id) {return _collisionPages1[id.z].objectRadius;}
+inline int ColliderType(uint3 id) {return _collisionPages1[id.z].shapeType;}
+inline float ColliderRecoverSpeed(uint3 id) {return _collisionPages1[id.z].recoverSpeed;}
+
+inline float3 ForceDir(uint3 id) {return _collisionPages1[id.z].force.xyz;}
+
+void FindCollisionPos(uint3 id, float3 grassVector, float2 atlasPos, float3 wPos, float currentSpeed)
 {
 	float3 grassDir = normalize(grassVector);
 	float mag = length(grassVector);
@@ -81,12 +139,15 @@ void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, float cu
 
 	float speed = _collisionRecoverSpeed * 0.1;
 
+	float3 colliderPosition = ColliderPosition(id);
+	float radius = ColliderRadius(id);
+
 	//////////////////////////
 	//FIND COLISION DISTANCE//
 	//////////////////////////
-	if(_colliderShape == COLLIDER_PLANE)
+	if(ColliderType(id) == COLLIDER_PLANE)
 	{
-		distance = RayPlaneIntersect(wPos, grassDir, _Plane_Position, _Plane_Normal);
+		distance = RayPlaneIntersect(wPos, grassDir, colliderPosition, _Plane_Normal);
 		colisionPos = wPos + grassDir * distance;
 		
 		if(!PointInsideArbitraryQuad(colisionPos, _Plane_Vertices))
@@ -94,18 +155,17 @@ void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, float cu
 		else
 			speed = 0;
 	}
-	else if(_colliderShape == COLLIDER_SPHERE)
+	else if(ColliderType(id) == COLLIDER_SPHERE)
 	{
-		distance = RaySphereIntersect(wPos, grassDir, _Sphere_Position, _objectRadius);
+		distance = RaySphereIntersect(wPos, grassDir, colliderPosition, radius);
 
 		colisionPos = wPos + grassDir * distance;
 
-		if(length(colisionPos.xz - _Sphere_Position.xz) > _objectRadius)
+		if(length(colisionPos.xz - colliderPosition.xz) > radius)
 			distance = INFINITY;
 		else
 			speed = 0;
 	}
-	
 	
 
 	//////////////////////////
@@ -117,19 +177,46 @@ void FindCollisionPos(float3 grassVector, float2 atlasPos, float3 wPos, float cu
 
 		float d = sqrt((mag * mag) - (h_offset * h_offset));
 
-		float3 pointOutOfObject = colisionPos + normalize(_forceDir) * d;
+		float3 pointOutOfObject = colisionPos + normalize(ForceDir(id)) * d;
 
 		grassVector = normalize(pointOutOfObject - wPos) * mag;
 	}
 	
-	_collisionmapAtlas[atlasPos] = float4(grassVector, 0);
+	_collisionmapAtlas[atlasPos] = float4(grassVector, ColliderRecoverSpeed(id));
+}
+
+[numthreads(1,1,1)]
+void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
+{
+    float2 pos = id.xy + BoundMin(id);
+
+    float2 uv = saturate(pos / PageSize(id));
+
+	//if(uv.x > 1 || uv.y > 1)	return;
+
+	float2 wp = CellWorldMin(id) + CellWorldSize(id) * uv.xy;
+	float3 worldPos = float3(wp.x, 0, wp.y);
+	
+	float2 atlasPos = round(PageMin(id) + uv * PageSize(id));
+
+	float4 collisionSample = _collisionmapAtlas[atlasPos];
+
+	//float2 atlasPosHM = _heightmapAtlasDesc.xy +  (uv * (_heightmapAtlasDesc.z - 2));
+	
+	if(!IsPointInsideCircle(worldPos.xz + collisionSample.xz, ColliderPositionXZ(id), ColliderRadius(id)))
+	{
+		_collisionmapAtlas[atlasPos] = float4(collisionSample.xyz, ColliderRecoverSpeed(id));
+		return;
+	}
+	worldPos.y = 0.05;// BilinearHeightMap(atlasPosHM);
+	
+	FindCollisionPos(id, collisionSample.xyz, atlasPos, worldPos, collisionSample.w);
 }
 
 
-
-
+/*
 [numthreads(8,8,1)]
-void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
+void ComputeObjectCollision1(uint3 id : SV_DispatchThreadID)
 {
     float2 pos = id.xy + _boundMin.xy;
 
@@ -157,7 +244,7 @@ void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
 	
 	FindCollisionPos(collisionSample.xyz, atlasPos, worldPos, collisionSample.w);
 }
-
+*/
 
 
 inline int2 GetCollisionPageMin(uint3 id)	{return _collisionPages[id.z].xy;}
