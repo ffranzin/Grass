@@ -17,6 +17,11 @@ int _distribuitionSeed;
 
 RWTexture2D<float4> _positionsBufferAtlas;
 
+
+inline float2 CellMin()		{return _cellDesc.xy;}
+inline float2 CellSize()	{return _cellDesc.zw;}
+
+
 [numthreads(8,8,1)]
 void ComputePositions(uint3 id : SV_DispatchThreadID)
 {
@@ -27,10 +32,11 @@ void ComputePositions(uint3 id : SV_DispatchThreadID)
 	float halfCellSize = _gridDim.y * .5;
 
 	float2 displacement = float2(halfCellSize, halfCellSize) /*Translate to center of gridCell*/ 
-						+ (RandomPosInsideSquere((uv * _distribuitionSeed) % 100, id.x) * halfCellSize);
+						+ (RandomPosInsideSquere((uv * _distribuitionSeed), id.x) * halfCellSize);
 	
-	float2 posWorld = uv * _cellDesc.zw;
-	posWorld += _cellDesc.xy;
+	float2 posWorld = CellMin() + uv * CellSize() + displacement;
+
+	//posWorld = CellMin() + RandomPosInsideSquere((id.xy * _distribuitionSeed), 1) * CellSize();
 
 	float scale = max(0.5, abs(gradientfbm2D(posWorld % 100, 2, 2, 1, 0.5, 2)));
 	

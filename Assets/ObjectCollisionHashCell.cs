@@ -79,7 +79,7 @@ public class GrassHashCell
             PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
         }
 
-        //PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
+        PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
 
         return _positionsBuffer[renderer.rendererID];
     }

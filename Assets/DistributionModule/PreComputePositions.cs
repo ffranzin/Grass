@@ -36,7 +36,9 @@ public class PreComputePositions : Singleton<PreComputePositions>
         
         compute.SetInt("_distribuitionSeed", cell.seed * config.seed);
         
-        compute.GetKernelThreadGroupSizes(kernelIndex, out uint gtx, out uint gty, out uint gtz);
+        uint gtx, gty, gtz;
+
+        compute.GetKernelThreadGroupSizes(kernelIndex, out  gtx, out  gty, out  gtz);
 
         int gx = Mathf.CeilToInt(gridDim1D / gtx);
         int gy = Mathf.CeilToInt(gridDim1D / gty);
