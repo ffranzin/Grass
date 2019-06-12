@@ -160,9 +160,9 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         compute.SetBuffer(computeCollisionKernel, "_collisionPages1", infosBuffer);
         compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
 
-        compute.Dispatch(computeCollisionKernel, 2, 2, infos.Count);
+        compute.Dispatch(computeCollisionKernel, 15, 15, infos.Count);
 
-        Debug.LogError("Reduzir os grupos");
+        //Debug.LogError("Reduzir os grupos");
     }
 
 

@@ -8,6 +8,20 @@ public class CreateNewObjectCollider : MonoBehaviour
 
     float throwTime;
 
+    void Spawn(float speed = 100f)
+    {
+        GameObject s = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        s.transform.position = transform.position;
+        Rigidbody r = s.AddComponent<Rigidbody>();
+        s.AddComponent<ObjectCollider>();
+        TerrainColliderInteraction interactor = s.AddComponent<TerrainColliderInteraction>();
+        interactor.consideOnlyInsideCell = true;
+        interactor.type = TerrainColliderInteractionShape.ShapeType.Sphere;
+
+        r.AddForce(Camera.main.transform.forward * speed * Mathf.Clamp01((Time.time - throwTime)), ForceMode.VelocityChange);
+    }
+
+
     // Update is called once per frame
     void Update()
     {
@@ -15,18 +29,18 @@ public class CreateNewObjectCollider : MonoBehaviour
         {
             throwTime = Time.time;
         }
-
         else if (Input.GetMouseButtonUp(2))
         {
-            GameObject s = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            s.transform.position = transform.position;
-            Rigidbody r = s.AddComponent<Rigidbody>();
-            s.AddComponent<ObjectCollider>();
-            TerrainColliderInteraction interactor = s.AddComponent<TerrainColliderInteraction>();
-            interactor.consideOnlyInsideCell = true;
-            interactor.type = TerrainColliderInteractionShape.ShapeType.Sphere;
+            Spawn();
+        }
 
-            r.AddForce(Camera.main.transform.forward * 600f * Mathf.Clamp01((Time.time - throwTime) / 3f), ForceMode.VelocityChange);
+        if (Input.GetMouseButton(3))
+        {
+            if ((Time.time - throwTime) > .25f)
+            {
+                Spawn();
+                throwTime = Time.time;
+            }
         }
     }
 }
