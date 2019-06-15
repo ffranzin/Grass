@@ -185,7 +185,7 @@ void FindCollisionPos(uint3 id, float3 grassVector, float2 atlasPos, float3 wPos
 	_collisionmapAtlas[atlasPos] = float4(grassVector, ColliderRecoverSpeed(id));
 }
 
-[numthreads(1,1,1)]
+[numthreads(8,8,1)]
 void ComputeObjectCollision(uint3 id : SV_DispatchThreadID)
 {
     float2 pos = id.xy + BoundMin(id);

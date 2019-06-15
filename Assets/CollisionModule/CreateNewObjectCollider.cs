@@ -17,7 +17,7 @@ public class CreateNewObjectCollider : MonoBehaviour
         TerrainColliderInteraction interactor = s.AddComponent<TerrainColliderInteraction>();
         interactor.consideOnlyInsideCell = true;
         interactor.type = TerrainColliderInteractionShape.ShapeType.Sphere;
-
+        interactor.transform.localScale = Vector3.one * Random.Range(1f, 4f);
         r.AddForce(Camera.main.transform.forward * speed * Mathf.Clamp01((Time.time - throwTime)), ForceMode.VelocityChange);
     }
 

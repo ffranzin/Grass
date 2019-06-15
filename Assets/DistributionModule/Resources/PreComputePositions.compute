@@ -17,7 +17,6 @@ int _distribuitionSeed;
 
 RWTexture2D<float4> _positionsBufferAtlas;
 
-<<<<<<< HEAD
 float frequency;
 float gain;
 float lacunarity;
@@ -36,11 +35,9 @@ inline float ScaleNoise(float2 seed)
 }
 
 
-=======
 
 inline float2 CellMin()		{return _cellDesc.xy;}
 inline float2 CellSize()	{return _cellDesc.zw;}
->>>>>>> ef17aa8cd27157f45d943c02d2ad17e093ff2a7e
 
 
 [numthreads(8,8,1)]
@@ -65,28 +62,3 @@ void ComputePositions(uint3 id : SV_DispatchThreadID)
 }
 
 
-
-
-/*
-
-[numthreads(8,8,1)]
-void ComputePositions1(uint3 id : SV_DispatchThreadID)
-{
-	if(id.x > _gridDim.x || id.y > _gridDim.x)	return;
-	
-	float2 uv = saturate(id.xy / _gridDim.x);
-
-	float halfCellSize = _gridDim.y * .5;
-
-	float2 displacement = float2(halfCellSize, halfCellSize) 
-						+ (RandomPosInsideSquere((uv * _distribuitionSeed) % 100, id.x) * halfCellSize);
-	
-	float2 posWorld = uv * _cellDesc.zw;
-	posWorld += _cellDesc.xy;
-
-	float scale = max(0.5, abs(gradientfbm2D(posWorld % 100, 2, 2, 1, 0.5, 2)));
-	
-	if(scale > SCALE_CUTOFF)
-		_positionsBuffer.Append(float4(posWorld.x, 0, posWorld.y, scale));
-}
-*/

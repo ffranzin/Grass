@@ -38,6 +38,29 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
     ComputeBuffer allPagesToRecover;
 
+    List<KeyValuePair<Vector2Int, List<CollisionInfo>>> teste = new List<KeyValuePair<Vector2Int, List<CollisionInfo>>>();
+
+    int collisionInfoStructureSize;
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct CollisionInfo
+    {
+        public Vector4 pageDesc;
+        public Vector4 cellDesc;
+        public Vector4 colliderPosition;
+        public Vector4 force;
+        public Vector4 boundMinMax;
+        public float recoverSpeed;
+
+        //----------
+
+        public float objectRadius;
+        public int shapeType;
+
+        public Matrix4x4 planeVertices;
+        public Vector4 planeNormal;
+    }
+
     /// <summary>
     /// Used to avoid the use of collision page, more specifically by the recover form method. 
     /// It is necessary for cells, without colliders inside, release his page. These releases occur after X times after the last request. 
@@ -68,6 +91,8 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         GameObject.Find("CollisionAtlas").GetComponent<RawImage>().texture = m_atlasCollisionAtlas.texture;
             
         UpdateInfosOnShaders.Instance.AddNewCallback = UpdateStaticData;
+
+        collisionInfoStructureSize = Marshal.SizeOf(typeof(CollisionInfo));
     }
     
 
@@ -129,28 +154,10 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         Profiler.EndSample();
     }
 
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct CollisionInfo
-    {
-        public Vector4 pageDesc;
-        public Vector4 cellDesc;
-        public Vector4 colliderPosition;
-        public Vector4 force;
-        public Vector4 boundMinMax;
-        public float recoverSpeed;
-
-        //----------
-
-        public float objectRadius;
-        public int shapeType;
-        
-        public Matrix4x4 planeVertices;
-        public Vector4 planeNormal;
-    }
+  
 
 
-    private void PrepareToCompute(List<CollisionInfo> infos)
+    private void PrepareToCompute1(List<CollisionInfo> infos)
     {
         if (infos == null || infos.Count == 0) return;
 
@@ -161,8 +168,26 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
 
         compute.Dispatch(computeCollisionKernel, 15, 15, infos.Count);
+    }
+    
 
-        //Debug.LogError("Reduzir os grupos");
+    private void PrepareToCompute()
+    {
+        if (teste == null || teste.Count == 0) return;
+
+        compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
+        
+        for (int i = 0; i < teste.Count; i++)
+        {
+            if (teste[i].Value.Count == 0) continue;
+
+            ComputeBuffer infosBuffer = new ComputeBuffer(teste[i].Value.Count, collisionInfoStructureSize);
+            infosBuffer.SetData(teste[i].Value);
+
+            compute.SetBuffer(computeCollisionKernel, "_collisionPages1", infosBuffer);
+            
+            compute.Dispatch(computeCollisionKernel, teste[i].Key.x, teste[i].Key.y, teste[i].Value.Count);
+        }
     }
 
 
@@ -172,7 +197,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
     /// offset inside the page and the amount os pixels that need be verified if is or not colliding with the object  
     /// (This is used to reduce the amount of groups dispatched on GPU and increase the performance).
     /// </summary>
-    private CollisionInfo ComputeCollision(TerrainColliderInteraction col, GrassHashCell cell)
+    private void ComputeCollision(TerrainColliderInteraction col, GrassHashCell cell)
     {
         CollisionInfo cf = new CollisionInfo();
 
@@ -190,7 +215,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         Vector3 radius = col.shape.meshRadius + new Vector3(TerrainColliderInteractionShape.meshRadiusOffset, 0, TerrainColliderInteractionShape.meshRadiusOffset);
 
-        Vector3 pos = transform.position;
+        Vector3 pos = col.transform.position;
 
         aux_objBoundMin = pos - radius;
         aux_objBoundMax = pos + radius;
@@ -209,12 +234,24 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         cf.boundMinMax = new Vector4(aux_atlasPixeloffsetMin.x, aux_atlasPixeloffsetMin.y, aux_atlasPixeloffsetMax.x, aux_atlasPixeloffsetMax.y);
         
-
         cell.lastTimeCollisionDetected = Time.time;
 
-        return cf;
+        int gx = 1 + (int)((aux_atlasPixeloffsetMax.x - aux_atlasPixeloffsetMin.x) / 8f);//mathf.ceilToInt
+        int gy = 1 + (int)((aux_atlasPixeloffsetMax.y - aux_atlasPixeloffsetMin.y) / 8f);
+        
+        for(int i = 0; i < teste.Count; i++)
+        {
+            if(teste[i].Key.x == gx && teste[i].Key.y == gy)
+            {
+                teste[i].Value.Add(cf);
+                return;
+            }
+        }
+
+        teste.Add(new KeyValuePair<Vector2Int, List<CollisionInfo>>(new Vector2Int(gx, gy), new List<CollisionInfo>()));
+        teste.Last().Value.Add(cf);
     }
-    
+
 
     void Update()
     {
@@ -243,8 +280,11 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         }
 
         Profiler.BeginSample("Grass - Collision Detection " + TerrainColliderInteraction.allColliders.Count);
+        
+        teste.ForEach(c => c.Value?.Clear());
 
-        List<CollisionInfo> infos = new List<CollisionInfo>();
+        if (Time.frameCount % 300 == 0)
+            teste.Clear();
 
         foreach (TerrainColliderInteraction c in TerrainColliderInteraction.allColliders)
         {
@@ -255,7 +295,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
             if (c.consideOnlyInsideCell)
             {
-                infos.Add(ComputeCollision(c, c.cell));
+                ComputeCollision(c, c.cell);
             }
             else
             {
@@ -263,12 +303,12 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
                 foreach (GrassHashCell cell in cells)
                 {
-                    infos.Add(ComputeCollision(c, cell));
+                    ComputeCollision(c, cell);
                 }
             }
         }
 
-        PrepareToCompute(infos);
+        PrepareToCompute();
 
         Profiler.EndSample();
     }
@@ -308,74 +348,59 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
     /// offset inside the page and the amount os pixels that need be verified if is or not colliding with the object  
     /// (This is used to reduce the amount of groups dispatched on GPU and increase the performance).
     /// </summary>
-    private void ComputeCollision1(TerrainColliderInteraction col, GrassHashCell cell)
-    {
-        Profiler.BeginSample("Grass - Collision Detection dispatch");
+    //private void ComputeCollision1(TerrainColliderInteraction col, GrassHashCell cell)
+    //{
+    //    Profiler.BeginSample("Grass - Collision Detection dispatch");
+        
+    //    Bounds bound = cell.boundsWorld;
+    //    Vector3 min = bound.min;
+    //    Vector3 size = bound.size;
 
-        //aux_desc_HM = cell.heightMapDesc;
+    //    ///////
+    //    compute.SetVector("_collisionmapDesc", cell.collisionPage.tl_size);
+    //    ///////
 
-        //if (m_atlasCollisionAtlas == null || aux_desc_HM == null)
-        //{
-        //    return;
-        //}
+    //    compute.SetVector("_cellWorldDesc", cell.boundsWorldMinSize);
 
-        Bounds bound = cell.boundsWorld;
-        Vector3 min = bound.min;
-        Vector3 size = bound.size;
+    //    Vector3 pos = col.transform.position;
+    //    compute.SetVector("_colliderPosition", pos);
 
-        ///////
-        compute.SetVector("_collisionmapDesc", cell.collisionPage.tl_size);
-        ///////
+    //    compute.SetVector("_forceDir", col.forceXZ);
 
-        compute.SetVector("_cellWorldDesc", cell.boundsWorldMinSize);
+    //    //col.shape.SetShapeComputeShader(compute);
 
-        Vector3 pos = col.transform.position;
-        compute.SetVector("_colliderPosition", pos);
+    //    compute.SetFloat("_collisionRecoverSpeed", col.collisionRecoverSpeed);
 
-        compute.SetVector("_forceDir", col.forceXZ);
+    //    Vector3 radius = col.shape.meshRadius + new Vector3(TerrainColliderInteractionShape.meshRadiusOffset, 0, TerrainColliderInteractionShape.meshRadiusOffset);
 
-        //col.shape.SetShapeComputeShader(compute);
+    //    aux_objBoundMin = pos - radius;
+    //    aux_objBoundMax = pos + radius;
 
-        compute.SetFloat("_collisionRecoverSpeed", col.collisionRecoverSpeed);
+    //    aux_uvMin.x = Mathf.Clamp01((aux_objBoundMin.x - min.x) / size.x);
+    //    aux_uvMin.y = Mathf.Clamp01((aux_objBoundMin.z - min.z) / size.z);
 
-        Vector3 radius = col.shape.meshRadius + new Vector3(TerrainColliderInteractionShape.meshRadiusOffset, 0, TerrainColliderInteractionShape.meshRadiusOffset);
+    //    aux_uvMax.x = Mathf.Clamp01((aux_objBoundMax.x - min.x) / size.x);
+    //    aux_uvMax.y = Mathf.Clamp01((aux_objBoundMax.z - min.z) / size.z);
 
-        aux_objBoundMin = pos - radius;
-        aux_objBoundMax = pos + radius;
+    //    aux_atlasPixeloffsetMin.x = (int)(aux_uvMin.x * m_atlasCollisionAtlasPageSize); //mathf.floorToInt
+    //    aux_atlasPixeloffsetMin.y = (int)(aux_uvMin.y * m_atlasCollisionAtlasPageSize);
 
-        aux_uvMin.x = Mathf.Clamp01((aux_objBoundMin.x - min.x) / size.x);
-        aux_uvMin.y = Mathf.Clamp01((aux_objBoundMin.z - min.z) / size.z);
+    //    aux_atlasPixeloffsetMax.x = 1 + (int)(aux_uvMax.x * m_atlasCollisionAtlasPageSize); //mathf.ceilToInt
+    //    aux_atlasPixeloffsetMax.y = 1 + (int)(aux_uvMax.y * m_atlasCollisionAtlasPageSize);
 
-        aux_uvMax.x = Mathf.Clamp01((aux_objBoundMax.x - min.x) / size.x);
-        aux_uvMax.y = Mathf.Clamp01((aux_objBoundMax.z - min.z) / size.z);
+    //    compute.SetVector("_boundMin", aux_atlasPixeloffsetMin);
+    //    compute.SetVector("_boundMax", aux_atlasPixeloffsetMax);
 
-        aux_atlasPixeloffsetMin.x = (int)(aux_uvMin.x * m_atlasCollisionAtlasPageSize); //mathf.floorToInt
-        aux_atlasPixeloffsetMin.y = (int)(aux_uvMin.y * m_atlasCollisionAtlasPageSize);
+    //    int gx = 1 + (int)((aux_atlasPixeloffsetMax.x - aux_atlasPixeloffsetMin.x) / 8f);//mathf.ceilToInt
+    //    int gy = 1 + (int)((aux_atlasPixeloffsetMax.y - aux_atlasPixeloffsetMin.y) / 8f);
 
-        aux_atlasPixeloffsetMax.x = 1 + (int)(aux_uvMax.x * m_atlasCollisionAtlasPageSize); //mathf.ceilToInt
-        aux_atlasPixeloffsetMax.y = 1 + (int)(aux_uvMax.y * m_atlasCollisionAtlasPageSize);
 
-        compute.SetVector("_boundMin", aux_atlasPixeloffsetMin);
-        compute.SetVector("_boundMax", aux_atlasPixeloffsetMax);
+    //    compute.Dispatch(computeCollisionKernel, gx, gy, 1);
 
-        int gx = 1 + (int)((aux_atlasPixeloffsetMax.x - aux_atlasPixeloffsetMin.x) / 8f);//mathf.ceilToInt
-        int gy = 1 + (int)((aux_atlasPixeloffsetMax.y - aux_atlasPixeloffsetMin.y) / 8f);
+    //    cell.lastTimeCollisionDetected = Time.time;
 
-#if UNITY_EDITOR
-        info_groupsDispatchedCount += gx * gy;
-        if (gx == 0 || gy == 0)
-        {
-            Debug.LogError("Invalid groups count");
-            return;
-        }
-#endif
-
-        compute.Dispatch(computeCollisionKernel, gx, gy, 1);
-
-        cell.lastTimeCollisionDetected = Time.time;
-
-        Profiler.EndSample();
-    }
+    //    Profiler.EndSample();
+    //}
 
 #if UNITY_EDITOR
     private void OnGUI()
