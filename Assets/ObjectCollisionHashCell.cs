@@ -102,7 +102,7 @@ public class GrassHashCell
         }
 
         lastFrameRequestedPositionsBuffer[renderer.rendererID] = Time.frameCount;
-
+        
         PreComputePositions.Instance.ComputePositions(_positionsBuffer[renderer.rendererID], this, renderer.m_config);
 
         return _positionsBuffer[renderer.rendererID];

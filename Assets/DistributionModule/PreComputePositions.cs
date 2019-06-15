@@ -39,7 +39,9 @@ public class PreComputePositions : Singleton<PreComputePositions>
         compute.SetFloat("amplitude", config.amplitude);
         compute.SetInt("octaves", config.octaves);
         
-        compute.GetKernelThreadGroupSizes(kernelIndex, out uint gtx, out uint gty, out uint gtz);
+        uint gtx, gty, gtz;
+
+        compute.GetKernelThreadGroupSizes(kernelIndex, out  gtx, out  gty, out  gtz);
 
         int gx = Mathf.CeilToInt(gridDim1D / gtx);
         int gy = Mathf.CeilToInt(gridDim1D / gty);

@@ -107,13 +107,13 @@ public class Atlas
 		for (int i = m_PageCountDim - 1; i >= 0; i--)
 			for (int j = m_PageCountDim - 1; j >= 0; j--)
 				freePages.Push(new Vector2Int(i, j));
-
-		//clearTex = new RenderTexture(pageSize, pageSize, 0, format, linear ? RenderTextureReadWrite.Linear : RenderTextureReadWrite.sRGB);
-		//clearTex.enableRandomWrite = true;
-		//clearTex.autoGenerateMips = false;
-		//clearTex.filterMode = FilterMode.Point;
-		//clearTex.wrapMode = TextureWrapMode.Clamp;
-	}
+        
+        //clearTex = new RenderTexture(pageSize, pageSize, 0, format, linear ? RenderTextureReadWrite.Linear : RenderTextureReadWrite.sRGB);
+        //clearTex.enableRandomWrite = true;
+        //clearTex.autoGenerateMips = false;
+        //clearTex.filterMode = FilterMode.Point;
+        //clearTex.wrapMode = TextureWrapMode.Clamp;
+    }
 
     public void LoadPage(AtlasPageDescriptor page, byte[] data)
     {

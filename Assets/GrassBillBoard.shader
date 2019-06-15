@@ -150,8 +150,19 @@ Shader "Nature/GrassBillBoard"
 
 				vs.debug = collisionSampleDebug;
 
+<<<<<<< HEAD
 				vs.normal = UnityObjectToWorldNormal(v.normal) ;
 				vs.normal *= (dot(vs.eyeVec, vs.normal) > 0 ? -1 : 1);
+=======
+				//float3 forward = UNITY_MATRIX_IT_MV[2].xyz;
+
+				//float teste = dot(UnityObjectToWorldNormal(v.normal), forward);
+
+				//if(teste > 0.95) vs.debug = float4(1,0,0,1);
+
+				//vs.normal = UnityObjectToWorldNormal(v.normal) ;
+				//vs.normal *= (dot(vs.eyeVec, vs.normal) > 0 ? -1 : 1);
+>>>>>>> ef17aa8cd27157f45d943c02d2ad17e093ff2a7e
 				//vs.normal = UnityObjectToWorldNormal(float3(0,1,0));//  * (dot(vs.eyeVec, normalWorld) > 0 ? -1 : 1);;
 				//vs.normal =  float3(0, 1, 0);// * (dot(vs.eyeVec, vs.normal) > 0 ? -1 : 1);;
 
