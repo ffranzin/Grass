@@ -19,6 +19,20 @@ bool PointInsideArbitraryQuad(float3 p, float4 quad[4])
                dot(qAresta4, d4) > 0;
 }
 
+
+bool PointInsideArbitraryQuad(float3 p, Matrix4x4 quadTmp)
+{
+	float4 quad[4];
+	quad[0] = quadTmp[0];
+	quad[1] = quadTmp[1];
+	quad[2] = quadTmp[2];
+	quad[3] = quadTmp[3];
+	
+	return PointInsideArbitraryQuad( p, quad);
+}
+
+
+
 bool IsPointInsideSphere(float3 pos, float3 center, float radius)
 {
 	return length(pos - center) < radius;

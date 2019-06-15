@@ -36,7 +36,7 @@ public class CreateNewObjectCollider : MonoBehaviour
 
         if (Input.GetMouseButton(3))
         {
-            if ((Time.time - throwTime) > .25f)
+            if ((Time.time - throwTime) > .15f)
             {
                 Spawn();
                 throwTime = Time.time;

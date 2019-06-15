@@ -36,31 +36,13 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
     private static int dispatchGroupSize;
 
+
     ComputeBuffer allPagesToRecover;
 
-    List<KeyValuePair<Vector2Int, List<CollisionInfo>>> teste = new List<KeyValuePair<Vector2Int, List<CollisionInfo>>>();
+    List<KeyValuePair<Vector2Int, List<TerrainColliderInteraction.CollisionInfo>>> allCollidersInfos = new List<KeyValuePair<Vector2Int, List<TerrainColliderInteraction.CollisionInfo>>>();
 
     int collisionInfoStructureSize;
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct CollisionInfo
-    {
-        public Vector4 pageDesc;
-        public Vector4 cellDesc;
-        public Vector4 colliderPosition;
-        public Vector4 force;
-        public Vector4 boundMinMax;
-        public float recoverSpeed;
-
-        //----------
-
-        public float objectRadius;
-        public int shapeType;
-
-        public Matrix4x4 planeVertices;
-        public Vector4 planeNormal;
-    }
-
+    
     /// <summary>
     /// Used to avoid the use of collision page, more specifically by the recover form method. 
     /// It is necessary for cells, without colliders inside, release his page. These releases occur after X times after the last request. 
@@ -92,7 +74,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
             
         UpdateInfosOnShaders.Instance.AddNewCallback = UpdateStaticData;
 
-        collisionInfoStructureSize = Marshal.SizeOf(typeof(CollisionInfo));
+        collisionInfoStructureSize = Marshal.SizeOf(typeof(TerrainColliderInteraction.CollisionInfo));
     }
     
 
@@ -155,38 +137,22 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
     }
 
   
-
-
-    private void PrepareToCompute1(List<CollisionInfo> infos)
+    private void DispatchAllCollisions()
     {
-        if (infos == null || infos.Count == 0) return;
-
-        ComputeBuffer infosBuffer = new ComputeBuffer(infos.Count, Marshal.SizeOf(typeof(CollisionInfo)));
-        infosBuffer.SetData(infos);
-
-        compute.SetBuffer(computeCollisionKernel, "_collisionPages1", infosBuffer);
-        compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
-
-        compute.Dispatch(computeCollisionKernel, 15, 15, infos.Count);
-    }
-    
-
-    private void PrepareToCompute()
-    {
-        if (teste == null || teste.Count == 0) return;
+        if (allCollidersInfos == null || allCollidersInfos.Count == 0) return;
 
         compute.SetTexture(computeCollisionKernel, "_collisionmapAtlas", m_atlasCollisionAtlas.texture);
         
-        for (int i = 0; i < teste.Count; i++)
+        for (int i = 0; i < allCollidersInfos.Count; i++)
         {
-            if (teste[i].Value.Count == 0) continue;
+            if (allCollidersInfos[i].Value.Count == 0) continue;
 
-            ComputeBuffer infosBuffer = new ComputeBuffer(teste[i].Value.Count, collisionInfoStructureSize);
-            infosBuffer.SetData(teste[i].Value);
+            ComputeBuffer infosBuffer = new ComputeBuffer(allCollidersInfos[i].Value.Count, collisionInfoStructureSize);
+            infosBuffer.SetData(allCollidersInfos[i].Value);
 
             compute.SetBuffer(computeCollisionKernel, "_collisionPages1", infosBuffer);
             
-            compute.Dispatch(computeCollisionKernel, teste[i].Key.x, teste[i].Key.y, teste[i].Value.Count);
+            compute.Dispatch(computeCollisionKernel, allCollidersInfos[i].Key.x, allCollidersInfos[i].Key.y, allCollidersInfos[i].Value.Count);
         }
     }
 
@@ -197,21 +163,13 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
     /// offset inside the page and the amount os pixels that need be verified if is or not colliding with the object  
     /// (This is used to reduce the amount of groups dispatched on GPU and increase the performance).
     /// </summary>
-    private void ComputeCollision(TerrainColliderInteraction col, GrassHashCell cell)
+    private void PrepareToCompute(TerrainColliderInteraction col, GrassHashCell cell)
     {
-        CollisionInfo cf = new CollisionInfo();
-
         Bounds bound = cell.boundsWorld;
         Vector3 min = bound.min;
         Vector3 size = bound.size;
-
-        cf.pageDesc = cell.collisionPage.tl_size;
-        cf.cellDesc = cell.boundsWorldMinSize;
-        cf.colliderPosition = col.transform.position;
-        cf.force = col.forceXZ;
-        cf.recoverSpeed = col.collisionRecoverSpeed;
         
-        col.shape.SetShapeComputeShader(ref cf);
+        TerrainColliderInteraction.CollisionInfo collisionInfo = col.GetCollisionInfo();
 
         Vector3 radius = col.shape.meshRadius + new Vector3(TerrainColliderInteractionShape.meshRadiusOffset, 0, TerrainColliderInteractionShape.meshRadiusOffset);
 
@@ -232,24 +190,24 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         aux_atlasPixeloffsetMax.x = 1 + (int)(aux_uvMax.x * m_atlasCollisionAtlasPageSize); //mathf.ceilToInt
         aux_atlasPixeloffsetMax.y = 1 + (int)(aux_uvMax.y * m_atlasCollisionAtlasPageSize);
 
-        cf.boundMinMax = new Vector4(aux_atlasPixeloffsetMin.x, aux_atlasPixeloffsetMin.y, aux_atlasPixeloffsetMax.x, aux_atlasPixeloffsetMax.y);
+        collisionInfo.boundMinMax = new Vector4(aux_atlasPixeloffsetMin.x, aux_atlasPixeloffsetMin.y, aux_atlasPixeloffsetMax.x, aux_atlasPixeloffsetMax.y);
         
         cell.lastTimeCollisionDetected = Time.time;
 
         int gx = 1 + (int)((aux_atlasPixeloffsetMax.x - aux_atlasPixeloffsetMin.x) / 8f);//mathf.ceilToInt
         int gy = 1 + (int)((aux_atlasPixeloffsetMax.y - aux_atlasPixeloffsetMin.y) / 8f);
         
-        for(int i = 0; i < teste.Count; i++)
+        for (int i = 0; i < allCollidersInfos.Count; i++)
         {
-            if(teste[i].Key.x == gx && teste[i].Key.y == gy)
+            if(allCollidersInfos[i].Key.x == gx && allCollidersInfos[i].Key.y == gy)
             {
-                teste[i].Value.Add(cf);
+                allCollidersInfos[i].Value.Add(collisionInfo);
                 return;
             }
         }
-
-        teste.Add(new KeyValuePair<Vector2Int, List<CollisionInfo>>(new Vector2Int(gx, gy), new List<CollisionInfo>()));
-        teste.Last().Value.Add(cf);
+        
+        allCollidersInfos.Add(new KeyValuePair<Vector2Int, List<TerrainColliderInteraction.CollisionInfo>>(new Vector2Int(gx, gy), new List<TerrainColliderInteraction.CollisionInfo>()));
+        allCollidersInfos.Last().Value.Add(collisionInfo);
     }
 
 
@@ -268,12 +226,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
         UpdateStaticData();
         
        // RecoverVectorToInitialState();
-
-#if UNITY_EDITOR
-        info_cellsSelected.Clear();
-        info_groupsDispatchedCount = 0;
-#endif
-
+       
         if (TerrainColliderInteraction.allColliders == null || TerrainColliderInteraction.allColliders.Count == 0)
         {
             return;
@@ -281,10 +234,10 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
         Profiler.BeginSample("Grass - Collision Detection " + TerrainColliderInteraction.allColliders.Count);
         
-        teste.ForEach(c => c.Value?.Clear());
+        allCollidersInfos.ForEach(c => c.Value?.Clear());
 
         if (Time.frameCount % 300 == 0)
-            teste.Clear();
+            allCollidersInfos.Clear();
 
         foreach (TerrainColliderInteraction c in TerrainColliderInteraction.allColliders)
         {
@@ -295,7 +248,7 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
             if (c.consideOnlyInsideCell)
             {
-                ComputeCollision(c, c.cell);
+                PrepareToCompute(c, c.cell);
             }
             else
             {
@@ -303,20 +256,25 @@ public class ObjectCollisionManager : Singleton<ObjectCollisionManager>
 
                 foreach (GrassHashCell cell in cells)
                 {
-                    ComputeCollision(c, cell);
+                    PrepareToCompute(c, cell);
                 }
             }
         }
 
-        PrepareToCompute();
+        DispatchAllCollisions();
 
         Profiler.EndSample();
     }
+
+
+
+
 
     private void ResetAllComputeBuffers()
     {
         ResizeComputeBuffer(ref allPagesToRecover, 1, sizeof(float) * 4);
     }
+    
 
     private void ResizeComputeBuffer(ref ComputeBuffer comp, int counter, int stride)
     {

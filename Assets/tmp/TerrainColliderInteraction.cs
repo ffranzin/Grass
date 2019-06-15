@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using static ObjectCollisionManager;
+using static TerrainColliderInteraction;
 
 public class TerrainColliderInteractionShape
 {
@@ -131,9 +133,26 @@ public class TerrainColliderInteractionShape
 
 public class TerrainColliderInteraction : MonoBehaviour
 {
-    /*
-    This class is a manager of all colliders that interact with the 'CollisionMap'. 
-    */
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct CollisionInfo
+    {
+        public Vector4 pageDesc;
+        public Vector4 cellDesc;
+        public Vector4 colliderPosition;
+        public Vector4 force;
+        public Vector4 boundMinMax;
+        public float recoverSpeed;
+
+        //----------
+
+        public float objectRadius;
+        public int shapeType;
+
+        public Matrix4x4 planeVertices;
+        public Vector4 planeNormal;
+    }
+
+
     public static List<TerrainColliderInteraction> allColliders { get; } = new List<TerrainColliderInteraction>();
     
     [HideInInspector] public TerrainColliderInteractionShape shape;
@@ -151,7 +170,8 @@ public class TerrainColliderInteraction : MonoBehaviour
     public bool consideOnlyInsideCell;
     public bool activeCollision { get; private set; }
 
-
+    private CollisionInfo collisionInfo;
+    
     public static void DeleteAllColliders()
     {
         for (int i = 0; i < allColliders.Count; i++)
@@ -194,6 +214,8 @@ public class TerrainColliderInteraction : MonoBehaviour
         _cell = GrassHashManager.Instance.GetHashCell(transform.position);
 
         collisionRecoverSpeed = Random.Range(0.01f, 1f);
+
+        collisionInfo = new CollisionInfo();
     }
     
 
@@ -232,6 +254,20 @@ public class TerrainColliderInteraction : MonoBehaviour
             
             return _cell;
         }
+    }
+
+    
+    public ref CollisionInfo GetCollisionInfo()
+    {
+        collisionInfo.pageDesc = cell.collisionPage.tl_size;
+        collisionInfo.cellDesc = cell.boundsWorldMinSize;
+        collisionInfo.colliderPosition = transform.position;
+        collisionInfo.force = _forceX0Z;
+        collisionInfo.recoverSpeed = collisionRecoverSpeed;
+
+        shape.SetShapeComputeShader(ref collisionInfo);
+
+        return ref collisionInfo;
     }
 
     
